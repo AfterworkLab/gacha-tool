@@ -27,12 +27,21 @@
         margin-right: auto;
     }
 
+    h3 {
+        margin-top: 20px;
+        margin-bottom: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        color: #444;
+    }
+
+    /* ★ 入力ブロックの視認性改善（今回のステップ） */
     .input-block {
-        margin-bottom: 16px;
-        padding: 12px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        padding: 16px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
@@ -40,8 +49,9 @@
 
     label {
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
         font-weight: bold;
+        color: #444;
     }
 
     input, select {
@@ -54,23 +64,26 @@
         font-size: 16px;
     }
 
+    /* 結果ブロック（前回改善済） */
     .result-block {
-        margin-top: 20px;
-        padding: 16px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-top: 24px;
+        padding: 20px;
+        background: #f7f9fc;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
     }
 
+    /* 青枠（確保人数） */
     .comment {
-        margin-top: 12px;
-        padding: 12px;
-        background: #eef6ff;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        padding: 14px;
+        background: #f0f6ff;
         border-left: 4px solid #4a90e2;
-        border-radius: 4px;
+        border-radius: 6px;
         white-space: pre-line;
     }
 
@@ -131,16 +144,17 @@
 
 <h2>結果</h2>
 <div class="result-block">
+
     <div>ピックアップまでに貯まる石：<span id="futureStone">0</span> 個</div>
     <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
+
+    <div class="comment" id="charResult"></div>
 
     <h3>天井までの残り</h3>
     <div>公式天井（90連）：<span id="remainHardText"></span></div>
     <div>97%ライン（80連）：<span id="remainSoftText"></span></div>
     <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
 
-    <h3>確保人数</h3>
-    <div class="comment" id="charResult"></div>
 </div>
 
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
@@ -183,8 +197,6 @@ function calculateGacha({
     const remainDouble = DOUBLE - total;
 
     const charCount = Math.floor(total / DOUBLE);
-
-    /* ★ 6人以上の余剰連数は「完凸必要分1080連」を引く */
     const extraPulls = total - (6 * DOUBLE);
 
     return {
@@ -214,12 +226,10 @@ function charText(charCount, total, extraPulls) {
         return `目的キャラの確保はまだ難しい状況です`;
     }
 
-    /* ★ 6人以上（完凸＋余剰連数） */
     if (charCount >= 6) {
         return `目的キャラ 6人（完凸達成）\nさらに +${extraPulls} 連分の余裕があります`;
     }
 
-    /* ★ 6人未満は従来ロジック */
     if (total % DOUBLE === 0) {
         return `目的キャラ ${charCount}人（確定）`;
     }
@@ -242,12 +252,12 @@ function updateResult() {
     document.getElementById("futureStone").textContent = d.futureStone;
     document.getElementById("totalPulls").textContent = d.total;
 
+    document.getElementById("charResult").textContent =
+        charText(d.charCount, d.total, d.extraPulls);
+
     document.getElementById("remainHardText").textContent = remainText(d.remainHard);
     document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
     document.getElementById("remainDoubleText").textContent = remainText(d.remainDouble);
-
-    document.getElementById("charResult").textContent =
-        charText(d.charCount, d.total, d.extraPulls);
 }
 </script>
 
