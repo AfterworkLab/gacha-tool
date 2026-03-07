@@ -86,6 +86,7 @@
         border-left: 4px solid #4a90e2;
         border-radius: 6px;
         white-space: pre-line;
+        font-weight: bold;
     }
 
     .sub-info {
@@ -93,6 +94,11 @@
         font-size: 14px;
         color: #555;
         white-space: pre-line;
+    }
+
+    .bold {
+        font-weight: bold;
+        color: #222;
     }
 
     small {
@@ -115,7 +121,7 @@
     <label>星軌専用チケット</label>
     <input id="tickets" type="number" value="0" oninput="updateResult()">
 
-    <div>今すぐ回せる回数：<span id="immediatePulls">0</span> 連</div>
+    <div>今すぐ回せる回数：<span id="immediatePulls" class="bold">0</span> 連</div>
 </div>
 
 <h2>未来予測</h2>
@@ -156,13 +162,14 @@
 <h2>結果</h2>
 <div class="result-block">
 
-    <div>ピックアップまでに貯まる石：<span id="futureStone">0</span> 個</div>
-    <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
+    <div>未来の合計回数：<span id="totalPulls" class="bold">0</span> 連</div>
+    <div>未来石の内訳：<span id="stoneDetail" class="bold"></span></div>
 
     <div class="comment" id="charResult"></div>
 
-    <!-- ★ 追加情報（すり抜け / 期待値） -->
     <div class="sub-info" id="extraInfo"></div>
+
+    <div class="sub-info" id="nextOne"></div>
 
     <h3>天井までの残り</h3>
     <div>公式天井（90連）：<span id="remainHardText"></span></div>
@@ -216,6 +223,8 @@ function calculateGacha({
     return {
         immediate,
         futureStone,
+        dailyStone,
+        eventStone,
         total,
         remainHard,
         remainSoft,
@@ -269,6 +278,15 @@ function updateExtraInfo(total) {
     );
 }
 
+function updateNextOne(total) {
+    const DOUBLE = 180;
+    const remain = DOUBLE - (total % DOUBLE);
+    if (total < DOUBLE) {
+        return `次の1人まで：あと ${remain} 連`;
+    }
+    return `次の1人まで：あと ${remain} 連`;
+}
+
 function updateResult() {
     const d = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
@@ -283,11 +301,17 @@ function updateResult() {
     document.getElementById("futureStone").textContent = d.futureStone;
     document.getElementById("totalPulls").textContent = d.total;
 
+    document.getElementById("stoneDetail").textContent =
+        `デイリー ${d.dailyStone} / イベント ${d.eventStone}`;
+
     document.getElementById("charResult").textContent =
         charText(d.charCount, d.total, d.extraPulls);
 
     document.getElementById("extraInfo").textContent =
         updateExtraInfo(d.total);
+
+    document.getElementById("nextOne").textContent =
+        updateNextOne(d.total);
 
     document.getElementById("remainHardText").textContent = remainText(d.remainHard);
     document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
