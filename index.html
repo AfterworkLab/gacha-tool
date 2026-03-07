@@ -28,9 +28,6 @@
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        max-width: 360px;
-        margin-left: auto;
-        margin-right: auto;
     }
     label {
         display: block;
@@ -52,9 +49,6 @@
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        max-width: 360px;
-        margin-left: auto;
-        margin-right: auto;
     }
     .comment {
         margin-top: 12px;
@@ -175,7 +169,7 @@ function calculateGacha({
     const remainDouble = DOUBLE_PITY - totalPulls;
 
     const charCount = Math.floor(totalPulls / DOUBLE_PITY);
-    const extraPulls = totalPulls - (charCount * DOUBLE_PITY);
+    const nextRemain = DOUBLE_PITY - (totalPulls % DOUBLE_PITY);
 
     return {
         immediatePulls,
@@ -185,7 +179,7 @@ function calculateGacha({
         remainSoft,
         remainDouble,
         charCount,
-        extraPulls
+        nextRemain
     };
 }
 
@@ -195,7 +189,7 @@ function formatRemainText(remain) {
     return `天井超過（+${Math.abs(remain)} 連）`;
 }
 
-function formatCharText(charCount, totalPulls, extraPulls) {
+function formatCharText(charCount, totalPulls) {
     const DOUBLE_PITY = 180;
 
     if (charCount === 0) {
@@ -203,10 +197,6 @@ function formatCharText(charCount, totalPulls, extraPulls) {
             return `目的キャラ 1人（すり抜けの可能性があります）`;
         }
         return `目的キャラの確保はまだ難しい状況です`;
-    }
-
-    if (charCount >= 6) {
-        return `目的キャラ 6人（完凸達成）\nさらに +${extraPulls} 連分の余裕があります`;
     }
 
     if (totalPulls % DOUBLE_PITY === 0) {
@@ -236,7 +226,7 @@ function updateResult() {
     document.getElementById("remainDoubleText").textContent = formatRemainText(data.remainDouble);
 
     document.getElementById("charResult").textContent =
-        formatCharText(data.charCount, data.totalPulls, data.extraPulls);
+        formatCharText(data.charCount, data.totalPulls);
 
     document.getElementById("comment").textContent = "";
 }
