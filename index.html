@@ -105,4 +105,140 @@
         <option value="3000">3000</option>
         <option value="3500">3500</option>
         <option value="4000">4000</option>
-   
+    </select>
+
+    <label>イベント石（端数）</label>
+    <input id="eventExtra" type="number" value="0" oninput="updateResult()">
+
+    <label>任意で追加する石（メインストーリー・模擬宇宙など）</label>
+    <input id="freeStone" type="number" value="0" oninput="updateResult()">
+
+</div>
+
+<h2>結果</h2>
+<div class="result-block">
+    <div>ピックアップまでに貯まる石：<span id="futureStone">0</span> 個</div>
+    <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
+
+    <h3>天井までの残り</h3>
+    <div>公式天井（90連）：<span id="remainHardText"></span></div>
+    <div>97%ライン（80連）：<span id="remainSoftText"></span></div>
+    <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
+
+    <h3>確保人数</h3>
+    <div>目的キャラ：<span id="charCount">0</span> 人</div>
+
+    <div class="comment" id="comment"></div>
+</div>
+
+<!-- 著作権表示 -->
+<small>© 2026 Afterwork Lab All Rights Reserved.</small>
+
+<script>
+function updateDays() {
+    const today = new Date();
+    const pickup = new Date(document.getElementById("pickupDate").value);
+    if (!isNaN(pickup)) {
+        const diff = Math.ceil((pickup - today) / (1000 * 60 * 60 * 24));
+        document.getElementById("days").value = Math.max(diff, 0);
+    }
+    updateResult();
+}
+
+function calculateGacha({
+    starJade = 0,
+    tickets = 0,
+    days = 0,
+    dailyRate = 1.0,
+    eventSelect = 0,
+    eventExtra = 0,
+    freeStone = 0
+}) {
+    const COST_PER_PULL = 160;
+    const HARD_PITY = 90;
+    const SOFT_PITY = 80;
+    const DOUBLE_PITY = 180;
+    const MAX_CONS = 6;
+
+    const immediatePulls = Math.floor(starJade / COST_PER_PULL) + tickets;
+
+    const dailyStone = days * dailyRate * 60;
+    const eventStone = Number(eventSelect) + Number(eventExtra);
+    const futureStone = dailyStone + eventStone + (freeStone || 0);
+
+    const futurePulls = Math.floor(futureStone / COST_PER_PULL);
+    const totalPulls = immediatePulls + futurePulls;
+
+    const remainHard = HARD_PITY - totalPulls;
+    const remainSoft = SOFT_PITY - totalPulls;
+    const remainDouble = DOUBLE_PITY - totalPulls;
+
+    let charCount = Math.floor(totalPulls / DOUBLE_PITY);
+    let extraPulls = totalPulls - (charCount * DOUBLE_PITY);
+
+    if (charCount >= MAX_CONS) {
+        extraPulls = totalPulls - (DOUBLE_PITY * MAX_CONS);
+        charCount = MAX_CONS;
+    }
+
+    let comment = "";
+    if (charCount >= 6) {
+        comment = `6凸分の確保が可能です。さらに ${extraPulls} 連分の余裕があります。`;
+    } else if (charCount >= 2) {
+        comment = `${charCount} 人分の確保が可能です。十分な余裕があります。`;
+    } else if (charCount === 1) {
+        comment = `97%ライン（80連）に到達しています。1人確保できる可能性が高い状況です。`;
+    } else {
+        if (totalPulls >= HARD_PITY) {
+            comment = `天井（90連）に届きますが、すり抜けると確保が難しい可能性があります。`;
+        } else {
+            const need = HARD_PITY - totalPulls;
+            const needStone = need * COST_PER_PULL;
+            comment = `現状では目的キャラの確保は難しい見込みです。天井まであと ${need} 連（星玉 ${needStone} 個）不足しています。`;
+        }
+    }
+
+    return {
+        immediatePulls,
+        futureStone,
+        totalPulls,
+        remainHard,
+        remainSoft,
+        remainDouble,
+        charCount,
+        comment
+    };
+}
+
+function formatRemainText(remain) {
+    if (remain > 0) return `あと ${remain} 連`;
+    if (remain === 0) return `天井達成！`;
+    return `天井超過（+${Math.abs(remain)} 連）`;
+}
+
+function updateResult() {
+    const data = calculateGacha({
+        starJade: Number(document.getElementById("starJade").value),
+        tickets: Number(document.getElementById("tickets").value),
+        days: Number(document.getElementById("days").value),
+        dailyRate: Number(document.getElementById("dailyRate").value),
+        eventSelect: Number(document.getElementById("eventSelect").value),
+        eventExtra: Number(document.getElementById("eventExtra").value),
+        freeStone: Number(document.getElementById("freeStone").value)
+    });
+
+    document.getElementById("immediatePulls").textContent = data.immediatePulls;
+    document.getElementById("futureStone").textContent = data.futureStone;
+    document.getElementById("totalPulls").textContent = data.totalPulls;
+
+    document.getElementById("remainHardText").textContent = formatRemainText(data.remainHard);
+    document.getElementById("remainSoftText").textContent = formatRemainText(data.remainSoft);
+    document.getElementById("remainDoubleText").textContent = formatRemainText(data.remainDouble);
+
+    document.getElementById("charCount").textContent = data.charCount;
+    document.getElementById("comment").textContent = data.comment;
+}
+</script>
+
+</body>
+</html>
