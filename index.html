@@ -27,6 +27,20 @@
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    h2.foldable::after {
+        content: " ▼";
+        font-size: 16px;
+        color: #666;
+    }
+
+    h2.foldable.open::after {
+        content: " ▲";
+        font-size: 16px;
+        color: #666;
     }
 
     h3 {
@@ -108,6 +122,11 @@
         text-align: center;
         margin-top: 24px;
     }
+
+    /* 折りたたみ用 */
+    .hidden {
+        display: none;
+    }
 </style>
 </head>
 
@@ -124,8 +143,8 @@
     <div>今すぐ回せる回数：<span id="immediatePulls" class="bold">0</span> 連</div>
 </div>
 
-<h2>未来予測</h2>
-<div class="input-block">
+<h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測</h2>
+<div id="futureBlock" class="input-block hidden">
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
@@ -181,6 +200,12 @@
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
 
 <script>
+function toggleFold(header, targetId) {
+    const block = document.getElementById(targetId);
+    block.classList.toggle("hidden");
+    header.classList.toggle("open");
+}
+
 function updateDays() {
     const today = new Date();
     const pickup = new Date(document.getElementById("pickupDate").value);
@@ -281,9 +306,6 @@ function updateExtraInfo(total) {
 function updateNextOne(total) {
     const DOUBLE = 180;
     const remain = DOUBLE - (total % DOUBLE);
-    if (total < DOUBLE) {
-        return `次の1人まで：あと ${remain} 連`;
-    }
     return `次の1人まで：あと ${remain} 連`;
 }
 
@@ -298,7 +320,6 @@ function updateResult() {
     });
 
     document.getElementById("immediatePulls").textContent = d.immediate;
-    document.getElementById("futureStone").textContent = d.futureStone;
     document.getElementById("totalPulls").textContent = d.total;
 
     document.getElementById("stoneDetail").textContent =
