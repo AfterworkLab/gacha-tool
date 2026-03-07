@@ -262,8 +262,10 @@ function updateExtraInfo(total) {
     const expOff = star5 - expTarget;
 
     return (
-        `すべてすり抜けた場合：目的キャラ ${minTarget}人 / すり抜けキャラ ${minOff}人\n` +
-        `確率通りに引けた場合：目的キャラ 約${expTarget}人 / すり抜けキャラ 約${expOff}人`
+        `すべてすり抜けた場合：\n` +
+        `目的キャラ ${minTarget}人 / すり抜けキャラ ${minOff}人\n\n` +
+        `確率通りに引けた場合：\n` +
+        `目的キャラ 約${expTarget}人 / すり抜けキャラ 約${expOff}人`
     );
 }
 
