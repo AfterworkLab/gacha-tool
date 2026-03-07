@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- AfterworkLab のみ埋め込み許可 -->
 <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://afterwork-lab.hatenablog.com;">
 
 <title>スタレ簡易ガチャ計算ツール</title>
@@ -17,20 +16,18 @@
         color: #333;
     }
 
-    /* ★ 見出しも枠と同じ幅に揃えて中央寄せ（パターン1） */
+    /* 見出しを枠と揃えて中央寄せ（パターン1） */
     h2 {
         margin-top: 24px;
         font-size: 20px;
         padding-left: 0;
-        border-left: none;   /* ← 左線を消す */
-        text-align: center;  /* ← タイトルとして中央寄せ */
+        border-left: none;
+        text-align: center;
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
-
     }
 
-    /* ★ 入力枠も 360px に統一 */
     .input-block {
         margin-bottom: 16px;
         padding: 12px;
@@ -69,12 +66,14 @@
         margin-right: auto;
     }
 
+    /* 青枠（確保人数の表示枠） */
     .comment {
         margin-top: 12px;
         padding: 12px;
         background: #eef6ff;
         border-left: 4px solid #4a90e2;
         border-radius: 4px;
+        white-space: pre-line;
     }
 
     small {
@@ -137,17 +136,16 @@
     <div>ピックアップまでに貯まる石：<span id="futureStone">0</span> 個</div>
     <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
 
- <h3>天井までの残り</h3>
+    <h3>天井までの残り</h3>
     <div>公式天井（90連）：<span id="remainHardText"></span></div>
     <div>97%ライン（80連）：<span id="remainSoftText"></span></div>
     <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
 
- <h3>確保人数</h3>
+    <h3>確保人数</h3>
+    <!-- ★ 青枠に統一 -->
     <div class="comment" id="charResult"></div>
-
 </div>
 
-<!-- 著作権表示 -->
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
 
 <script>
@@ -169,30 +167,30 @@ function calculateGacha({
     eventSelect = 0,
     eventExtra = 0
 }) {
-    const COST_PER_PULL = 160;
-    const HARD_PITY = 90;
-    const SOFT_PITY = 80;
-    const DOUBLE_PITY = 180;
+    const COST = 160;
+    const HARD = 90;
+    const SOFT = 80;
+    const DOUBLE = 180;
 
-    const immediatePulls = Math.floor(starJade / COST_PER_PULL) + tickets;
+    const immediate = Math.floor(starJade / COST) + tickets;
 
     const dailyStone = days * dailyRate * 60;
     const eventStone = Number(eventSelect) + Number(eventExtra);
     const futureStone = dailyStone + eventStone;
 
-    const futurePulls = Math.floor(futureStone / COST_PER_PULL);
-    const totalPulls = immediatePulls + futurePulls;
+    const futurePulls = Math.floor(futureStone / COST);
+    const total = immediate + futurePulls;
 
-    const remainHard = HARD_PITY - totalPulls;
-    const remainSoft = SOFT_PITY - totalPulls;
-    const remainDouble = DOUBLE_PITY - totalPulls;
+    const remainHard = HARD - total;
+    const remainSoft = SOFT - total;
+    const remainDouble = DOUBLE - total;
 
-    const charCount = Math.floor(totalPulls / DOUBLE_PITY);
+    const charCount = Math.floor(total / DOUBLE);
 
     return {
-        immediatePulls,
+        immediate,
         futureStone,
-        totalPulls,
+        total,
         remainHard,
         remainSoft,
         remainDouble,
@@ -200,23 +198,21 @@ function calculateGacha({
     };
 }
 
-function formatRemainText(remain) {
+function remainText(remain) {
     if (remain > 0) return `あと ${remain} 連`;
     if (remain === 0) return `天井達成！`;
     return `天井超過（+${Math.abs(remain)} 連）`;
 }
 
-function formatCharText(charCount, totalPulls) {
-    const DOUBLE_PITY = 180;
+function charText(charCount, total) {
+    const DOUBLE = 180;
 
     if (charCount === 0) {
-        if (totalPulls >= 90) {
-            return `目的キャラ 1人（すり抜けの可能性があります）`;
-        }
+        if (total >= 90) return `目的キャラ 1人（すり抜けの可能性があります）`;
         return `目的キャラの確保はまだ難しい状況です`;
     }
 
-    if (totalPulls % DOUBLE_PITY === 0) {
+    if (total % DOUBLE === 0) {
         return `目的キャラ ${charCount}人（確定）`;
     }
 
@@ -225,7 +221,7 @@ function formatCharText(charCount, totalPulls) {
 }
 
 function updateResult() {
-    const data = calculateGacha({
+    const d = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
         tickets: Number(document.getElementById("tickets").value),
         days: Number(document.getElementById("days").value),
@@ -234,22 +230,17 @@ function updateResult() {
         eventExtra: Number(document.getElementById("eventExtra").value)
     });
 
-    document.getElementById("immediatePulls").textContent = data.immediatePulls;
-    document.getElementById("futureStone").textContent = data.futureStone;
-    document.getElementById("totalPulls").textContent = data.totalPulls;
+    document.getElementById("immediatePulls").textContent = d.immediate;
+    document.getElementById("futureStone").textContent = d.futureStone;
+    document.getElementById("totalPulls").textContent = d.total;
 
-    document.getElementById("remainHardText").textContent = formatRemainText(data.remainHard);
-    document.getElementById("remainSoftText").textContent = formatRemainText(data.remainSoft);
-    document.getElementById("remainDoubleText").textContent = formatRemainText(data.remainDouble);
+    document.getElementById("remainHardText").textContent = remainText(d.remainHard);
+    document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
+    document.getElementById("remainDoubleText").textContent = remainText(d.remainDouble);
 
-    document.getElementById("charResult").textContent =
-        formatCharText(data.charCount, data.totalPulls);
-
-    document.getElementById("comment").textContent = "";
+    document.getElementById("charResult").textContent = charText(d.charCount, d.total);
 }
 </script>
 
 </body>
 </html>
-
-
