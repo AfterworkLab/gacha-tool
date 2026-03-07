@@ -110,9 +110,6 @@
     <label>イベント石（端数）</label>
     <input id="eventExtra" type="number" value="0" oninput="updateResult()">
 
-    <label>任意で追加する石（メインストーリー・模擬宇宙など）</label>
-    <input id="freeStone" type="number" value="0" oninput="updateResult()">
-
 </div>
 
 <h2>結果</h2>
@@ -126,7 +123,7 @@
     <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
 
     <h3>確保人数</h3>
-    <div>目的キャラ：<span id="charCount">0</span> 人</div>
+    <div id="charResult"></div>
 
     <div class="comment" id="comment"></div>
 </div>
@@ -151,20 +148,18 @@ function calculateGacha({
     days = 0,
     dailyRate = 1.0,
     eventSelect = 0,
-    eventExtra = 0,
-    freeStone = 0
+    eventExtra = 0
 }) {
     const COST_PER_PULL = 160;
     const HARD_PITY = 90;
     const SOFT_PITY = 80;
     const DOUBLE_PITY = 180;
-    const MAX_CONS = 6;
 
     const immediatePulls = Math.floor(starJade / COST_PER_PULL) + tickets;
 
     const dailyStone = days * dailyRate * 60;
     const eventStone = Number(eventSelect) + Number(eventExtra);
-    const futureStone = dailyStone + eventStone + (freeStone || 0);
+    const futureStone = dailyStone + eventStone;
 
     const futurePulls = Math.floor(futureStone / COST_PER_PULL);
     const totalPulls = immediatePulls + futurePulls;
@@ -173,30 +168,8 @@ function calculateGacha({
     const remainSoft = SOFT_PITY - totalPulls;
     const remainDouble = DOUBLE_PITY - totalPulls;
 
-    let charCount = Math.floor(totalPulls / DOUBLE_PITY);
-    let extraPulls = totalPulls - (charCount * DOUBLE_PITY);
-
-    if (charCount >= MAX_CONS) {
-        extraPulls = totalPulls - (DOUBLE_PITY * MAX_CONS);
-        charCount = MAX_CONS;
-    }
-
-    let comment = "";
-    if (charCount >= 6) {
-        comment = `6凸分の確保が可能です。さらに ${extraPulls} 連分の余裕があります。`;
-    } else if (charCount >= 2) {
-        comment = `${charCount} 人分の確保が可能です。十分な余裕があります。`;
-    } else if (charCount === 1) {
-        comment = `97%ライン（80連）に到達しています。1人確保できる可能性が高い状況です。`;
-    } else {
-        if (totalPulls >= HARD_PITY) {
-            comment = `天井（90連）に届きますが、すり抜けると確保が難しい可能性があります。`;
-        } else {
-            const need = HARD_PITY - totalPulls;
-            const needStone = need * COST_PER_PULL;
-            comment = `現状では目的キャラの確保は難しい見込みです。天井まであと ${need} 連（星玉 ${needStone} 個）不足しています。`;
-        }
-    }
+    const charCount = Math.floor(totalPulls / DOUBLE_PITY);
+    const nextRemain = DOUBLE_PITY - (totalPulls % DOUBLE_PITY);
 
     return {
         immediatePulls,
@@ -206,7 +179,7 @@ function calculateGacha({
         remainSoft,
         remainDouble,
         charCount,
-        comment
+        nextRemain
     };
 }
 
@@ -216,6 +189,26 @@ function formatRemainText(remain) {
     return `天井超過（+${Math.abs(remain)} 連）`;
 }
 
+function formatCharText(charCount, totalPulls) {
+    const DOUBLE_PITY = 180;
+
+    if (charCount === 0) {
+        if (totalPulls >= 90) {
+            return `目的キャラ 1人（すり抜けの可能性があります）`;
+        }
+        return `目的キャラの確保はまだ難しい状況です`;
+    }
+
+    const next = charCount + 1;
+    const remainToNext = DOUBLE_PITY - (totalPulls % DOUBLE_PITY);
+
+    if (totalPulls % DOUBLE_PITY === 0) {
+        return `目的キャラ ${charCount}人（確定）`;
+    }
+
+    return `目的キャラ ${charCount}人（${next}人目はすり抜けの可能性があります）`;
+}
+
 function updateResult() {
     const data = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
@@ -223,8 +216,7 @@ function updateResult() {
         days: Number(document.getElementById("days").value),
         dailyRate: Number(document.getElementById("dailyRate").value),
         eventSelect: Number(document.getElementById("eventSelect").value),
-        eventExtra: Number(document.getElementById("eventExtra").value),
-        freeStone: Number(document.getElementById("freeStone").value)
+        eventExtra: Number(document.getElementById("eventExtra").value)
     });
 
     document.getElementById("immediatePulls").textContent = data.immediatePulls;
@@ -235,8 +227,9 @@ function updateResult() {
     document.getElementById("remainSoftText").textContent = formatRemainText(data.remainSoft);
     document.getElementById("remainDoubleText").textContent = formatRemainText(data.remainDouble);
 
-    document.getElementById("charCount").textContent = data.charCount;
-    document.getElementById("comment").textContent = data.comment;
+    document.getElementById("charResult").textContent = formatCharText(data.charCount, data.totalPulls);
+
+    document.getElementById("comment").textContent = "";
 }
 </script>
 
