@@ -142,7 +142,6 @@
     <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
 
     <h3>確保人数</h3>
-    <!-- ★ 青枠に統一 -->
     <div class="comment" id="charResult"></div>
 </div>
 
@@ -186,6 +185,7 @@ function calculateGacha({
     const remainDouble = DOUBLE - total;
 
     const charCount = Math.floor(total / DOUBLE);
+    const extraPulls = total - (charCount * DOUBLE);
 
     return {
         immediate,
@@ -194,7 +194,8 @@ function calculateGacha({
         remainHard,
         remainSoft,
         remainDouble,
-        charCount
+        charCount,
+        extraPulls
     };
 }
 
@@ -204,7 +205,7 @@ function remainText(remain) {
     return `天井超過（+${Math.abs(remain)} 連）`;
 }
 
-function charText(charCount, total) {
+function charText(charCount, total, extraPulls) {
     const DOUBLE = 180;
 
     if (charCount === 0) {
@@ -212,6 +213,12 @@ function charText(charCount, total) {
         return `目的キャラの確保はまだ難しい状況です`;
     }
 
+    /* ★ 6人以上（完凸＋余剰連数） */
+    if (charCount >= 6) {
+        return `目的キャラ 6人（完凸達成）\nさらに +${extraPulls} 連分の余裕があります`;
+    }
+
+    /* ★ 6人未満は従来ロジック */
     if (total % DOUBLE === 0) {
         return `目的キャラ ${charCount}人（確定）`;
     }
@@ -238,7 +245,8 @@ function updateResult() {
     document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
     document.getElementById("remainDoubleText").textContent = remainText(d.remainDouble);
 
-    document.getElementById("charResult").textContent = charText(d.charCount, d.total);
+    document.getElementById("charResult").textContent =
+        charText(d.charCount, d.total, d.extraPulls);
 }
 </script>
 
