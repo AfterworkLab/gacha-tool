@@ -209,7 +209,7 @@ function charText(charCount, total, extraPulls) {
     const DOUBLE = 180;
 
     if (charCount === 0) {
-        if (total >= 90) return `目的キャラ 1人（すり抜けの可能性があります）`;
+        if (total >= 90) return `目的キャラ 1人\n（すり抜けの可能性があります）`;
         return `目的キャラの確保はまだ難しい状況です`;
     }
 
@@ -224,7 +224,7 @@ function charText(charCount, total, extraPulls) {
     }
 
     const next = charCount + 1;
-    return `目的キャラ ${charCount}人（${next}人目はすり抜けの可能性があります）`;
+    return `目的キャラ ${charCount}人\n（${next}人目はすり抜けの可能性があります）`;
 }
 
 function updateResult() {
@@ -252,3 +252,4 @@ function updateResult() {
 
 </body>
 </html>
+
