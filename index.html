@@ -6,7 +6,7 @@
 
 <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://afterwork-lab.hatenablog.com;">
 
-<title>スタレ簡易ガチャ計算ツール</title>
+<title>HoYoVerse ガチャ簡易計算ツール</title>
 
 <style>
     body {
@@ -27,8 +27,12 @@
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
-        cursor: pointer;
+        cursor: default;
         user-select: none;
+    }
+
+    h2.foldable {
+        cursor: pointer;
     }
 
     h2.foldable::after {
@@ -73,7 +77,7 @@
 
     input, select {
         width: 100%;
-        max-width: 240px;
+        max-width: 260px;
         padding: 10px 12px;
         margin-bottom: 14px;
         border: 1px solid #ccc;
@@ -84,12 +88,12 @@
     .result-block {
         margin-top: 28px;
         padding: 20px;
-        background: #f7f9fc;
         border-radius: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
+        background: #dce8ff; /* 初期はスタレ色 */
     }
 
     .comment {
@@ -123,7 +127,6 @@
         margin-top: 24px;
     }
 
-    /* 折りたたみ用 */
     .hidden {
         display: none;
     }
@@ -132,19 +135,28 @@
 
 <body>
 
+<h2 id="gameTitle">崩壊スターレイル ガチャ簡易計算</h2>
+
 <h2>今すぐ回せる回数</h2>
 <div class="input-block">
-    <label>星玉</label>
+    <label id="labelStone">星玉</label>
     <input id="starJade" type="number" value="0" oninput="updateResult()">
 
-    <label>星軌専用チケット</label>
+    <label id="labelTicket">星軌専用チケット</label>
     <input id="tickets" type="number" value="0" oninput="updateResult()">
 
     <div>今すぐ回せる回数：<span id="immediatePulls" class="bold">0</span> 連</div>
 </div>
 
-<h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測</h2>
+<h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
 <div id="futureBlock" class="input-block hidden">
+
+    <label>ガチャタイプ</label>
+    <select id="gameSelect" onchange="changeGame()">
+        <option value="starRail">崩壊スターレイル</option>
+        <option value="genshin">原神</option>
+        <option value="zenless">ゼンレスゾーンゼロ</option>
+    </select>
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
@@ -179,7 +191,9 @@
 </div>
 
 <h2>結果</h2>
-<div class="result-block">
+<div class="result-block" id="resultBlock">
+
+    <div class="sub-info" id="gameInfo">現在：崩壊スターレイル</div>
 
     <div>未来の合計回数：<span id="totalPulls" class="bold">0</span> 連</div>
     <div>未来石の内訳：<span id="stoneDetail" class="bold"></span></div>
@@ -191,19 +205,76 @@
     <div class="sub-info" id="nextOne"></div>
 
     <h3>天井までの残り</h3>
-    <div>公式天井（90連）：<span id="remainHardText"></span></div>
-    <div>97%ライン（80連）：<span id="remainSoftText"></span></div>
-    <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
+    <div>公式天井：<span id="remainHardText"></span></div>
+    <div>ソフト天井目安：<span id="remainSoftText"></span></div>
+    <div>すり抜け込み（2回分）：<span id="remainDoubleText"></span></div>
 
 </div>
 
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
 
 <script>
+const gachaConfig = {
+    starRail: {
+        name: "崩壊スターレイル",
+        stoneName: "星玉",
+        ticketName: "星軌専用チケット",
+        dailyStone: 60,
+        hard: 90,
+        soft: 80,
+        double: 180,
+        pickupRate: 0.5,
+        themeColor: "#dce8ff"
+    },
+    genshin: {
+        name: "原神",
+        stoneName: "原石",
+        ticketName: "紡がれた運命",
+        dailyStone: 60,
+        hard: 90,
+        soft: 75,
+        double: 180,
+        pickupRate: 0.5,
+        themeColor: "#fff4d6"
+    },
+    zenless: {
+        name: "ゼンレスゾーンゼロ",
+        stoneName: "ポリクローム",
+        ticketName: "暗号化マスターテープ",
+        dailyStone: 60, // 仮
+        hard: 80,
+        soft: 70,
+        double: 160,
+        pickupRate: 0.5,
+        themeColor: "#f0e6ff"
+    }
+};
+
+let currentGame = "starRail";
+
+function getCfg() {
+    return gachaConfig[currentGame];
+}
+
 function toggleFold(header, targetId) {
     const block = document.getElementById(targetId);
     block.classList.toggle("hidden");
     header.classList.toggle("open");
+}
+
+function changeGame() {
+    currentGame = document.getElementById("gameSelect").value;
+    const cfg = getCfg();
+
+    document.getElementById("labelStone").textContent = cfg.stoneName;
+    document.getElementById("labelTicket").textContent = cfg.ticketName;
+    document.getElementById("gameTitle").textContent = cfg.name + " ガチャ簡易計算";
+    document.getElementById("gameInfo").textContent = "現在：" + cfg.name;
+
+    const rb = document.getElementById("resultBlock");
+    rb.style.background = cfg.themeColor;
+
+    updateResult();
 }
 
 function updateDays() {
@@ -224,26 +295,24 @@ function calculateGacha({
     eventSelect = 0,
     eventExtra = 0
 }) {
+    const cfg = getCfg();
     const COST = 160;
-    const HARD = 90;
-    const SOFT = 80;
-    const DOUBLE = 180;
 
     const immediate = Math.floor(starJade / COST) + tickets;
 
-    const dailyStone = days * dailyRate * 60;
+    const dailyStone = days * dailyRate * cfg.dailyStone;
     const eventStone = Number(eventSelect) + Number(eventExtra);
     const futureStone = dailyStone + eventStone;
 
     const futurePulls = Math.floor(futureStone / COST);
     const total = immediate + futurePulls;
 
-    const remainHard = HARD - total;
-    const remainSoft = SOFT - total;
-    const remainDouble = DOUBLE - total;
+    const remainHard = cfg.hard - total;
+    const remainSoft = cfg.soft - total;
+    const remainDouble = cfg.double - total;
 
-    const charCount = Math.floor(total / DOUBLE);
-    const extraPulls = total - (6 * DOUBLE);
+    const charCount = Math.floor(total / cfg.double);
+    const extraPulls = total - (6 * cfg.double);
 
     return {
         immediate,
@@ -266,10 +335,11 @@ function remainText(remain) {
 }
 
 function charText(charCount, total, extraPulls) {
-    const DOUBLE = 180;
+    const cfg = getCfg();
+    const DOUBLE = cfg.double;
 
     if (charCount === 0) {
-        if (total >= 90)
+        if (total >= cfg.hard)
             return `目的キャラ 1人\n（すり抜けの可能性があります）`;
         return `目的キャラの確保はまだ難しい状況です`;
     }
@@ -287,12 +357,13 @@ function charText(charCount, total, extraPulls) {
 }
 
 function updateExtraInfo(total) {
-    const star5 = Math.floor(total / 90);
-    const minTarget = Math.floor(total / 180);
+    const cfg = getCfg();
+    const star5 = Math.floor(total / cfg.hard);
+    const minTarget = Math.floor(total / cfg.double);
     const minOff = star5 - minTarget;
 
     const remainingStar5 = star5 - minTarget;
-    const expTarget = minTarget + Math.round(remainingStar5 * 0.5);
+    const expTarget = minTarget + Math.round(remainingStar5 * cfg.pickupRate);
     const expOff = star5 - expTarget;
 
     return (
@@ -304,8 +375,10 @@ function updateExtraInfo(total) {
 }
 
 function updateNextOne(total) {
-    const DOUBLE = 180;
-    const remain = DOUBLE - (total % DOUBLE);
+    const cfg = getCfg();
+    const DOUBLE = cfg.double;
+    const mod = total % DOUBLE;
+    const remain = mod === 0 ? DOUBLE : DOUBLE - mod;
     return `次の1人まで：あと ${remain} 連`;
 }
 
@@ -338,6 +411,9 @@ function updateResult() {
     document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
     document.getElementById("remainDoubleText").textContent = remainText(d.remainDouble);
 }
+
+// 初期表示
+changeGame();
 </script>
 
 </body>
