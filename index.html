@@ -16,23 +16,36 @@
         background: #fafafa;
         color: #333;
     }
-   h2 {
-       max-width: 360px;
-       margin-left: auto;
-       margin-right: auto;
+
+    /* ★ 見出しも枠と同じ幅に揃えて中央寄せ（パターン1） */
+    h2 {
+        margin-top: 24px;
+        font-size: 20px;
+        border-left: 4px solid #4a90e2;
+        padding-left: 8px;
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
     }
+
+    /* ★ 入力枠も 360px に統一 */
     .input-block {
         margin-bottom: 16px;
         padding: 12px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
     }
+
     label {
         display: block;
         margin-bottom: 4px;
         font-weight: bold;
     }
+
     input, select {
         width: 100%;
         max-width: 220px;
@@ -42,13 +55,18 @@
         border-radius: 6px;
         font-size: 16px;
     }
+
     .result-block {
         margin-top: 20px;
         padding: 16px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
     }
+
     .comment {
         margin-top: 12px;
         padding: 12px;
@@ -56,6 +74,7 @@
         border-left: 4px solid #4a90e2;
         border-radius: 4px;
     }
+
     small {
         color: #666;
         font-size: 12px;
@@ -168,7 +187,6 @@ function calculateGacha({
     const remainDouble = DOUBLE_PITY - totalPulls;
 
     const charCount = Math.floor(totalPulls / DOUBLE_PITY);
-    const nextRemain = DOUBLE_PITY - (totalPulls % DOUBLE_PITY);
 
     return {
         immediatePulls,
@@ -177,8 +195,7 @@ function calculateGacha({
         remainHard,
         remainSoft,
         remainDouble,
-        charCount,
-        nextRemain
+        charCount
     };
 }
 
@@ -233,4 +250,3 @@ function updateResult() {
 
 </body>
 </html>
-
