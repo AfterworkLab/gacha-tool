@@ -14,14 +14,16 @@
         padding: 16px;
         background: #fafafa;
         color: #333;
+        font-size: 16px;
+        line-height: 1.6;
     }
 
     h2 {
-        margin-top: 24px;
+        margin-top: 28px;
+        margin-bottom: 16px;
         font-size: 20px;
-        padding-left: 0;
-        border-left: none;
         text-align: center;
+        color: #333;
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
@@ -35,13 +37,13 @@
         color: #444;
     }
 
-    /* ★ 入力ブロックの視認性改善（今回のステップ） */
     .input-block {
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         padding: 16px;
         background: #ffffff;
         border-radius: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-bottom: 1px solid #e5e5e5;
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
@@ -49,24 +51,24 @@
 
     label {
         display: block;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         font-weight: bold;
         color: #444;
+        font-size: 15px;
     }
 
     input, select {
         width: 100%;
-        max-width: 220px;
-        padding: 8px;
-        margin-bottom: 12px;
+        max-width: 240px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
         border: 1px solid #ccc;
-        border-radius: 6px;
+        border-radius: 8px;
         font-size: 16px;
     }
 
-    /* 結果ブロック（前回改善済） */
     .result-block {
-        margin-top: 24px;
+        margin-top: 28px;
         padding: 20px;
         background: #f7f9fc;
         border-radius: 10px;
@@ -76,7 +78,6 @@
         margin-right: auto;
     }
 
-    /* 青枠（確保人数） */
     .comment {
         margin-top: 20px;
         margin-bottom: 20px;
@@ -87,9 +88,19 @@
         white-space: pre-line;
     }
 
+    .sub-info {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #555;
+        white-space: pre-line;
+    }
+
     small {
         color: #666;
         font-size: 12px;
+        display: block;
+        text-align: center;
+        margin-top: 24px;
     }
 </style>
 </head>
@@ -112,9 +123,6 @@
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
-
-    <label>次のピックアップまでの日数（自動計算）</label>
-    <input id="days" type="number" value="0" oninput="updateResult()">
 
     <label>デイリー達成率</label>
     <select id="dailyRate" onchange="updateResult()">
@@ -140,6 +148,9 @@
     <label>イベント石（端数）</label>
     <input id="eventExtra" type="number" value="0" oninput="updateResult()">
 
+    <label>次のピックアップまでの日数（自動計算）</label>
+    <input id="days" type="number" value="0" oninput="updateResult()">
+
 </div>
 
 <h2>結果</h2>
@@ -149,6 +160,9 @@
     <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
 
     <div class="comment" id="charResult"></div>
+
+    <!-- ★ 追加情報（すり抜け / 期待値） -->
+    <div class="sub-info" id="extraInfo"></div>
 
     <h3>天井までの残り</h3>
     <div>公式天井（90連）：<span id="remainHardText"></span></div>
@@ -238,6 +252,20 @@ function charText(charCount, total, extraPulls) {
     return `目的キャラ ${charCount}人\n（${next}人目はすり抜けの可能性があります）`;
 }
 
+function updateExtraInfo(total) {
+    const star5 = Math.floor(total / 90);
+    const minTarget = Math.floor(total / 180);
+    const minOff = star5 - minTarget;
+
+    const expTarget = Math.round(star5 * 0.5);
+    const expOff = star5 - expTarget;
+
+    return (
+        `すべてすり抜けた場合：目的キャラ ${minTarget}人 / すり抜けキャラ ${minOff}人\n` +
+        `確率通りに引けた場合：目的キャラ 約${expTarget}人 / すり抜けキャラ 約${expOff}人`
+    );
+}
+
 function updateResult() {
     const d = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
@@ -254,6 +282,9 @@ function updateResult() {
 
     document.getElementById("charResult").textContent =
         charText(d.charCount, d.total, d.extraPulls);
+
+    document.getElementById("extraInfo").textContent =
+        updateExtraInfo(d.total);
 
     document.getElementById("remainHardText").textContent = remainText(d.remainHard);
     document.getElementById("remainSoftText").textContent = remainText(d.remainSoft);
