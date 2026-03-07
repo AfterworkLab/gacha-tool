@@ -89,4 +89,158 @@
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
 
-    <label>次のピックアップまでの日数（自動計算）
+    <label>次のピックアップまでの日数（自動計算）</label>
+    <input id="days" type="number" value="0" oninput="updateResult()">
+
+    <label>デイリー達成率</label>
+    <select id="dailyRate" onchange="updateResult()">
+        <option value="1.0">毎日</option>
+        <option value="0.7">週5</option>
+        <option value="0.4">週3</option>
+        <option value="0">やらない</option>
+    </select>
+
+    <label>イベント石（選択）</label>
+    <select id="eventSelect" onchange="updateResult()">
+        <option value="0">0</option>
+        <option value="500">500</option>
+        <option value="1000">1000</option>
+        <option value="1500">1500</option>
+        <option value="2000">2000</option>
+        <option value="2500">2500</option>
+        <option value="3000">3000</option>
+        <option value="3500">3500</option>
+        <option value="4000">4000</option>
+    </select>
+
+    <label>イベント石（端数）</label>
+    <input id="eventExtra" type="number" value="0" oninput="updateResult()">
+
+</div>
+
+<h2>結果</h2>
+<div class="result-block">
+    <div>ピックアップまでに貯まる石：<span id="futureStone">0</span> 個</div>
+    <div>未来の合計回数：<span id="totalPulls">0</span> 連</div>
+
+    <h3>天井までの残り</h3>
+    <div>公式天井（90連）：<span id="remainHardText"></span></div>
+    <div>97%ライン（80連）：<span id="remainSoftText"></span></div>
+    <div>すり抜け込み（180連）：<span id="remainDoubleText"></span></div>
+
+    <h3>確保人数</h3>
+    <div id="charResult"></div>
+
+    <div class="comment" id="comment"></div>
+</div>
+
+<!-- 著作権表示 -->
+<small>© 2026 Afterwork Lab All Rights Reserved.</small>
+
+<script>
+function updateDays() {
+    const today = new Date();
+    const pickup = new Date(document.getElementById("pickupDate").value);
+    if (!isNaN(pickup)) {
+        const diff = Math.ceil((pickup - today) / (1000 * 60 * 60 * 24));
+        document.getElementById("days").value = Math.max(diff, 0);
+    }
+    updateResult();
+}
+
+function calculateGacha({
+    starJade = 0,
+    tickets = 0,
+    days = 0,
+    dailyRate = 1.0,
+    eventSelect = 0,
+    eventExtra = 0
+}) {
+    const COST_PER_PULL = 160;
+    const HARD_PITY = 90;
+    const SOFT_PITY = 80;
+    const DOUBLE_PITY = 180;
+
+    const immediatePulls = Math.floor(starJade / COST_PER_PULL) + tickets;
+
+    const dailyStone = days * dailyRate * 60;
+    const eventStone = Number(eventSelect) + Number(eventExtra);
+    const futureStone = dailyStone + eventStone;
+
+    const futurePulls = Math.floor(futureStone / COST_PER_PULL);
+    const totalPulls = immediatePulls + futurePulls;
+
+    const remainHard = HARD_PITY - totalPulls;
+    const remainSoft = SOFT_PITY - totalPulls;
+    const remainDouble = DOUBLE_PITY - totalPulls;
+
+    const charCount = Math.floor(totalPulls / DOUBLE_PITY);
+    const extraPulls = totalPulls - (charCount * DOUBLE_PITY);
+
+    return {
+        immediatePulls,
+        futureStone,
+        totalPulls,
+        remainHard,
+        remainSoft,
+        remainDouble,
+        charCount,
+        extraPulls
+    };
+}
+
+function formatRemainText(remain) {
+    if (remain > 0) return `あと ${remain} 連`;
+    if (remain === 0) return `天井達成！`;
+    return `天井超過（+${Math.abs(remain)} 連）`;
+}
+
+function formatCharText(charCount, totalPulls, extraPulls) {
+    const DOUBLE_PITY = 180;
+
+    if (charCount === 0) {
+        if (totalPulls >= 90) {
+            return `目的キャラ 1人（すり抜けの可能性があります）`;
+        }
+        return `目的キャラの確保はまだ難しい状況です`;
+    }
+
+    if (charCount >= 6) {
+        return `目的キャラ 6人（完凸達成）\nさらに +${extraPulls} 連分の余裕があります`;
+    }
+
+    if (totalPulls % DOUBLE_PITY === 0) {
+        return `目的キャラ ${charCount}人（確定）`;
+    }
+
+    const next = charCount + 1;
+    return `目的キャラ ${charCount}人（${next}人目はすり抜けの可能性があります）`;
+}
+
+function updateResult() {
+    const data = calculateGacha({
+        starJade: Number(document.getElementById("starJade").value),
+        tickets: Number(document.getElementById("tickets").value),
+        days: Number(document.getElementById("days").value),
+        dailyRate: Number(document.getElementById("dailyRate").value),
+        eventSelect: Number(document.getElementById("eventSelect").value),
+        eventExtra: Number(document.getElementById("eventExtra").value)
+    });
+
+    document.getElementById("immediatePulls").textContent = data.immediatePulls;
+    document.getElementById("futureStone").textContent = data.futureStone;
+    document.getElementById("totalPulls").textContent = data.totalPulls;
+
+    document.getElementById("remainHardText").textContent = formatRemainText(data.remainHard);
+    document.getElementById("remainSoftText").textContent = formatRemainText(data.remainSoft);
+    document.getElementById("remainDoubleText").textContent = formatRemainText(data.remainDouble);
+
+    document.getElementById("charResult").textContent =
+        formatCharText(data.charCount, data.totalPulls, data.extraPulls);
+
+    document.getElementById("comment").textContent = "";
+}
+</script>
+
+</body>
+</html>
