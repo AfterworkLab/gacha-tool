@@ -16,7 +16,6 @@
         color: #333;
     }
 
-    /* 見出しを枠と揃えて中央寄せ（パターン1） */
     h2 {
         margin-top: 24px;
         font-size: 20px;
@@ -66,7 +65,6 @@
         margin-right: auto;
     }
 
-    /* 青枠（確保人数の表示枠） */
     .comment {
         margin-top: 12px;
         padding: 12px;
@@ -185,7 +183,9 @@ function calculateGacha({
     const remainDouble = DOUBLE - total;
 
     const charCount = Math.floor(total / DOUBLE);
-    const extraPulls = total - (charCount * DOUBLE);
+
+    /* ★ 6人以上の余剰連数は「完凸必要分1080連」を引く */
+    const extraPulls = total - (6 * DOUBLE);
 
     return {
         immediate,
@@ -209,7 +209,8 @@ function charText(charCount, total, extraPulls) {
     const DOUBLE = 180;
 
     if (charCount === 0) {
-        if (total >= 90) return `目的キャラ 1人\n（すり抜けの可能性があります）`;
+        if (total >= 90)
+            return `目的キャラ 1人\n（すり抜けの可能性があります）`;
         return `目的キャラの確保はまだ難しい状況です`;
     }
 
@@ -252,4 +253,3 @@ function updateResult() {
 
 </body>
 </html>
-
