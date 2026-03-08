@@ -45,11 +45,10 @@
     }
 
     h2 {
-        margin-top: 24px;
-        margin-bottom: 16px;
+        margin-top: 16px;
+        margin-bottom: 12px;
         font-size: 20px;
         text-align: center;
-        color: #333;
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
@@ -73,7 +72,7 @@
     }
 
     .input-block {
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         padding: 16px;
         background: #ffffff;
         border-radius: 10px;
@@ -103,7 +102,7 @@
     }
 
     .result-block {
-        margin-top: 28px;
+        margin-top: 12px;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -162,9 +161,9 @@
     </select>
 </div>
 
-<h2 id="gameTitle">崩壊スターレイル ガチャ簡易計算</h2>
+<h2 id="gameTitle" style="color:#4a6fbf;">崩壊スターレイル ガチャ簡易計算</h2>
 
-<h2>今すぐ回せる回数</h2>
+<!-- 入力欄を上に、結果をすぐ下に配置 -->
 <div class="input-block">
     <label id="labelStone">星玉</label>
     <input id="starJade" type="number" value="0" oninput="updateResult()">
@@ -173,6 +172,27 @@
     <input id="tickets" type="number" value="0" oninput="updateResult()">
 
     <div>今すぐ回せる回数：<span id="immediatePulls" class="bold">0</span> 連</div>
+</div>
+
+<h2>結果</h2>
+<div class="result-block" id="resultBlock">
+
+    <div class="sub-info" id="gameInfo">現在：崩壊スターレイル</div>
+
+    <div>未来の合計回数：<span id="totalPulls" class="bold">0</span> 連</div>
+    <div>未来石の内訳：<span id="stoneDetail" class="bold"></span></div>
+
+    <div class="comment" id="charResult"></div>
+
+    <div class="sub-info" id="extraInfo"></div>
+
+    <div class="sub-info" id="nextOne"></div>
+
+    <h3>天井までの残り</h3>
+    <div>公式天井：<span id="remainHardText"></span></div>
+    <div>ソフト天井目安：<span id="remainSoftText"></span></div>
+    <div>すり抜け込み（2回分）：<span id="remainDoubleText"></span></div>
+
 </div>
 
 <h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
@@ -210,27 +230,6 @@
 
 </div>
 
-<h2>結果</h2>
-<div class="result-block" id="resultBlock">
-
-    <div class="sub-info" id="gameInfo">現在：崩壊スターレイル</div>
-
-    <div>未来の合計回数：<span id="totalPulls" class="bold">0</span> 連</div>
-    <div>未来石の内訳：<span id="stoneDetail" class="bold"></span></div>
-
-    <div class="comment" id="charResult"></div>
-
-    <div class="sub-info" id="extraInfo"></div>
-
-    <div class="sub-info" id="nextOne"></div>
-
-    <h3>天井までの残り</h3>
-    <div>公式天井：<span id="remainHardText"></span></div>
-    <div>ソフト天井目安：<span id="remainSoftText"></span></div>
-    <div>すり抜け込み（2回分）：<span id="remainDoubleText"></span></div>
-
-</div>
-
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
 
 <script>
@@ -244,7 +243,8 @@ const gachaConfig = {
         soft: 80,
         double: 180,
         pickupRate: 0.5,
-        themeColor: "#dce8ff"
+        themeColor: "#dce8ff",
+        titleColor: "#4a6fbf"
     },
     genshin: {
         name: "原神",
@@ -255,7 +255,8 @@ const gachaConfig = {
         soft: 75,
         double: 180,
         pickupRate: 0.5,
-        themeColor: "#fff4d6"
+        themeColor: "#fff4d6",
+        titleColor: "#c49a3a"
     },
     zenless: {
         name: "ゼンレスゾーンゼロ",
@@ -266,7 +267,8 @@ const gachaConfig = {
         soft: 70,
         double: 160,
         pickupRate: 0.5,
-        themeColor: "#f0e6ff"
+        themeColor: "#f0e6ff",
+        titleColor: "#8a5cc2"
     }
 };
 
@@ -289,6 +291,7 @@ function changeGame() {
     document.getElementById("labelStone").textContent = cfg.stoneName;
     document.getElementById("labelTicket").textContent = cfg.ticketName;
     document.getElementById("gameTitle").textContent = cfg.name + " ガチャ簡易計算";
+    document.getElementById("gameTitle").style.color = cfg.titleColor;
     document.getElementById("gameInfo").textContent = "現在：" + cfg.name;
 
     const rb = document.getElementById("resultBlock");
