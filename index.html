@@ -18,30 +18,25 @@
         line-height: 1.6;
     }
 
-    /* 小さく控えめなゲーム選択フォーム */
+    /* ガチャタイプ選択（タイトル兼用） */
     .game-select-container {
         max-width: 360px;
         margin: 0 auto 12px auto;
-        padding: 6px 10px;
-        background: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        font-size: 14px;
-    }
-
-    .game-select-container label {
+        padding: 10px 12px;
+        background: #dce8ff; /* 初期はスタレ色 */
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         font-size: 14px;
         font-weight: bold;
-        margin-bottom: 4px;
-        display: block;
     }
 
     .game-select-container select {
         width: 100%;
-        padding: 6px 8px;
-        font-size: 14px;
+        padding: 8px 10px;
+        font-size: 15px;
         border-radius: 6px;
         border: 1px solid #ccc;
+        background: #fff;
     }
 
     h2 {
@@ -151,9 +146,9 @@
 
 <body>
 
-<!-- 小さく控えめなゲーム選択フォーム -->
+<!-- ガチャタイプ（タイトル兼用） -->
 <div class="game-select-container">
-    <label>ガチャタイプ</label>
+    ガチャタイプ
     <select id="gameSelect" onchange="changeGame()">
         <option value="starRail">崩壊スターレイル</option>
         <option value="genshin">原神</option>
@@ -161,9 +156,7 @@
     </select>
 </div>
 
-<h2 id="gameTitle" style="color:#4a6fbf;">崩壊スターレイル ガチャ簡易計算</h2>
-
-<!-- 入力欄を上に、結果をすぐ下に配置 -->
+<!-- 入力欄 -->
 <div class="input-block">
     <label id="labelStone">星玉</label>
     <input id="starJade" type="number" value="0" oninput="updateResult()">
@@ -228,6 +221,19 @@
     <label>次のピックアップまでの日数（自動計算）</label>
     <input id="days" type="number" value="0" oninput="updateResult()">
 
+    <!-- 月パス（3作品対応） -->
+    <label id="passLabel">列車補給標章</label>
+    <select id="passType" onchange="updateResult()">
+        <option value="none">未購入</option>
+        <option value="buy">購入予定</option>
+        <option value="owned">購入済み</option>
+    </select>
+
+    <div id="passDaysBlock" class="hidden">
+        <label>残り日数（0〜30）</label>
+        <input id="passDays" type="number" value="0" min="0" max="30" oninput="updateResult()">
+    </div>
+
 </div>
 
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
@@ -238,37 +244,37 @@ const gachaConfig = {
         name: "崩壊スターレイル",
         stoneName: "星玉",
         ticketName: "星軌専用チケット",
+        passName: "列車補給標章",
         dailyStone: 60,
         hard: 90,
         soft: 80,
         double: 180,
         pickupRate: 0.5,
-        themeColor: "#dce8ff",
-        titleColor: "#4a6fbf"
+        themeColor: "#dce8ff"
     },
     genshin: {
         name: "原神",
         stoneName: "原石",
         ticketName: "紡がれた運命",
+        passName: "空月の祝福",
         dailyStone: 60,
         hard: 90,
         soft: 75,
         double: 180,
         pickupRate: 0.5,
-        themeColor: "#fff4d6",
-        titleColor: "#c49a3a"
+        themeColor: "#fff4d6"
     },
     zenless: {
         name: "ゼンレスゾーンゼロ",
         stoneName: "ポリクローム",
         ticketName: "暗号化マスターテープ",
+        passName: "インターノット会員",
         dailyStone: 60,
         hard: 80,
         soft: 70,
         double: 160,
         pickupRate: 0.5,
-        themeColor: "#f0e6ff",
-        titleColor: "#8a5cc2"
+        themeColor: "#f0e6ff"
     }
 };
 
@@ -290,12 +296,12 @@ function changeGame() {
 
     document.getElementById("labelStone").textContent = cfg.stoneName;
     document.getElementById("labelTicket").textContent = cfg.ticketName;
-    document.getElementById("gameTitle").textContent = cfg.name + " ガチャ簡易計算";
-    document.getElementById("gameTitle").style.color = cfg.titleColor;
     document.getElementById("gameInfo").textContent = "現在：" + cfg.name;
 
-    const rb = document.getElementById("resultBlock");
-    rb.style.background = cfg.themeColor;
+    document.getElementById("passLabel").textContent = cfg.passName;
+
+    document.querySelector(".game-select-container").style.background = cfg.themeColor;
+    document.getElementById("resultBlock").style.background = cfg.themeColor;
 
     updateResult();
 }
@@ -321,11 +327,18 @@ function calculateGacha({
     const cfg = getCfg();
     const COST = 160;
 
+    const passType = document.getElementById("passType").value;
+    const passDays = Number(document.getElementById("passDays").value);
+
+    let passStone = 0;
+    if (passType === "buy") passStone = 300 + passDays * 90;
+    if (passType === "owned") passStone = passDays * 90;
+
     const immediate = Math.floor(starJade / COST) + tickets;
 
     const dailyStone = days * dailyRate * cfg.dailyStone;
     const eventStone = Number(eventSelect) + Number(eventExtra);
-    const futureStone = dailyStone + eventStone;
+    const futureStone = dailyStone + eventStone + passStone;
 
     const futurePulls = Math.floor(futureStone / COST);
     const total = immediate + futurePulls;
@@ -342,6 +355,7 @@ function calculateGacha({
         futureStone,
         dailyStone,
         eventStone,
+        passStone,
         total,
         remainHard,
         remainSoft,
@@ -406,6 +420,15 @@ function updateNextOne(total) {
 }
 
 function updateResult() {
+    const passType = document.getElementById("passType").value;
+    const passDaysBlock = document.getElementById("passDaysBlock");
+
+    if (passType === "owned") {
+        passDaysBlock.classList.remove("hidden");
+    } else {
+        passDaysBlock.classList.add("hidden");
+    }
+
     const d = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
         tickets: Number(document.getElementById("tickets").value),
@@ -419,7 +442,7 @@ function updateResult() {
     document.getElementById("totalPulls").textContent = d.total;
 
     document.getElementById("stoneDetail").textContent =
-        `デイリー ${d.dailyStone} / イベント ${d.eventStone}`;
+        `デイリー ${d.dailyStone} / イベント ${d.eventStone} / 月パス ${d.passStone}`;
 
     document.getElementById("charResult").textContent =
         charText(d.charCount, d.total, d.extraPulls);
