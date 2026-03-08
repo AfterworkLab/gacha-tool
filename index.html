@@ -424,7 +424,7 @@ function updateResult() {
     const passType = document.getElementById("passType").value;
     const passDaysBlock = document.getElementById("passDaysBlock");
 
-    if (passType === "owned") {
+    if (passType === "owned" || passType === "buy") {
         passDaysBlock.classList.remove("hidden");
     } else {
         passDaysBlock.classList.add("hidden");
@@ -465,6 +465,7 @@ changeGame();
 
 </body>
 </html>
+
 
 
 
