@@ -18,8 +18,34 @@
         line-height: 1.6;
     }
 
+    /* 小さく控えめなゲーム選択フォーム */
+    .game-select-container {
+        max-width: 360px;
+        margin: 0 auto 12px auto;
+        padding: 6px 10px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        font-size: 14px;
+    }
+
+    .game-select-container label {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .game-select-container select {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 14px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
     h2 {
-        margin-top: 28px;
+        margin-top: 24px;
         margin-bottom: 16px;
         font-size: 20px;
         text-align: center;
@@ -27,7 +53,6 @@
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
-        cursor: default;
         user-select: none;
     }
 
@@ -45,14 +70,6 @@
         content: " ▲";
         font-size: 16px;
         color: #666;
-    }
-
-    h3 {
-        margin-top: 20px;
-        margin-bottom: 8px;
-        font-size: 16px;
-        font-weight: bold;
-        color: #444;
     }
 
     .input-block {
@@ -135,6 +152,16 @@
 
 <body>
 
+<!-- 小さく控えめなゲーム選択フォーム -->
+<div class="game-select-container">
+    <label>ガチャタイプ</label>
+    <select id="gameSelect" onchange="changeGame()">
+        <option value="starRail">崩壊スターレイル</option>
+        <option value="genshin">原神</option>
+        <option value="zenless">ゼンレスゾーンゼロ</option>
+    </select>
+</div>
+
 <h2 id="gameTitle">崩壊スターレイル ガチャ簡易計算</h2>
 
 <h2>今すぐ回せる回数</h2>
@@ -150,13 +177,6 @@
 
 <h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
 <div id="futureBlock" class="input-block hidden">
-
-    <label>ガチャタイプ</label>
-    <select id="gameSelect" onchange="changeGame()">
-        <option value="starRail">崩壊スターレイル</option>
-        <option value="genshin">原神</option>
-        <option value="zenless">ゼンレスゾーンゼロ</option>
-    </select>
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
@@ -241,7 +261,7 @@ const gachaConfig = {
         name: "ゼンレスゾーンゼロ",
         stoneName: "ポリクローム",
         ticketName: "暗号化マスターテープ",
-        dailyStone: 60, // 仮
+        dailyStone: 60,
         hard: 80,
         soft: 70,
         double: 160,
