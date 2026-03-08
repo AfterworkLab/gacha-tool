@@ -231,8 +231,8 @@
     </select>
 
     <div id="passDaysBlock" class="hidden">
-        <label>残り日数（0〜30）</label>
-        <input id="passDays" type="number" value="0" min="0" max="30" oninput="updateResult()">
+        <label>残り日数（0〜120）</label>
+        <input id="passDays" type="number" value="0" min="0" max="120" oninput="updateResult()">
     </div>
 
 </div>
@@ -249,7 +249,7 @@ const gachaConfig = {
         dailyStone: 60,
         hard: 90,
         soft: 80,
-        double: 180,
+        double: 160,
         pickupRate: 0.5,
         themeColor: "#dce8ff"
     },
@@ -260,8 +260,8 @@ const gachaConfig = {
         passName: "空月の祝福",
         dailyStone: 60,
         hard: 90,
-        soft: 75,
-        double: 180,
+        soft: 80,
+        double: 160,
         pickupRate: 0.5,
         themeColor: "#fff4d6"
     },
@@ -271,8 +271,8 @@ const gachaConfig = {
         ticketName: "暗号化マスターテープ",
         passName: "インターノット会員",
         dailyStone: 60,
-        hard: 80,
-        soft: 70,
+        hard: 90,
+        soft: 80,
         double: 160,
         pickupRate: 0.5,
         themeColor: "#f0e6ff"
@@ -465,4 +465,5 @@ changeGame();
 
 </body>
 </html>
+
 
