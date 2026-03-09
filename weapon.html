@@ -160,12 +160,29 @@
     <div>未来石の内訳：<span id="stoneDetail" class="bold"></span></div>
 
     <div class="comment" id="weaponResult"></div>
+    <pre id="weaponExtraInfo"></pre>
+
+    <div class="sub-info" id="extraInfo"></div>
 
     <div class="sub-info" id="extraInfo"></div>
 
 </div>
 
 <h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
+
+<div class="input-block">
+  <label>初期状態（何回回した）</label>
+  <input id="initialPulls" type="number" min="0" max="79" value="0">
+</div>
+
+<div class="input-block">
+  <label>初期状態（天井済？）</label>
+  <select id="isGuaranteed">
+    <option value="false">未確定</option>
+    <option value="true">天井済（確定）</option>
+  </select>
+</div>
+    
 <div id="futureBlock" class="input-block hidden">
 
     <label>ピックアップ日</label>
@@ -306,6 +323,8 @@ function calculateGacha({
     dailyRate = 1.0,
     eventSelect = 0,
     eventExtra = 0
+    initialPulls = 0,
+    isGuaranteed = false
 }) {
     const cfg = getCfg();
     const COST = 160;
@@ -324,8 +343,9 @@ function calculateGacha({
     const futureStone = dailyStone + eventStone + passStone;
 
     const futurePulls = Math.floor(futureStone / COST);
-    const total = immediate + futurePulls;
+    const total = immediate + futurePulls + initialPulls;
 
+    
     return {
         immediate,
         futureStone,
@@ -342,8 +362,9 @@ function weaponText(total) {
     const SOFT = cfg.soft;
     const DOUBLE = cfg.double;
 
-    const remainNoMiss = total - HARD;
-    const remainMiss = total - DOUBLE;
+    const remainNoMiss = total - (HARD - initialPulls);
+    const remainMiss = total - (DOUBLE - initialPulls);
+
 
     const remainSoft = total - SOFT;
 
@@ -356,6 +377,32 @@ function weaponText(total) {
     );
 }
 
+function updateWeaponExtraInfo(total) {
+    const cfg = getCfg();
+    const HARD = cfg.hard;     // 80
+    const DOUBLE = cfg.double; // 160
+    const RATE = cfg.pickupRate; // 0.75
+
+    // 星5が出る回数
+    const star5 = Math.floor(total / HARD);
+
+    // すべてすり抜けた場合（最大1回すり抜け → 次が確定）
+    const minTarget = Math.floor(total / DOUBLE); // 160連で1本確定
+    const minOff = star5 - minTarget;
+
+    // 確率通り（75%）の場合
+    const remainingStar5 = star5 - minTarget;
+    const expTarget = minTarget + Math.round(remainingStar5 * RATE);
+    const expOff = star5 - expTarget;
+
+    return (
+        `すべてすり抜けた場合：\n` +
+        `目的武器 ${minTarget}本 / すり抜け武器 ${minOff}本\n\n` +
+        `確率通りに引けた場合：\n` +
+        `目的武器 約${expTarget}本 / すり抜け武器 約${expOff}本`
+    );
+}
+    
 function updateResult() {
     const passType = document.getElementById("passType").value;
     const passDaysBlock = document.getElementById("passDaysBlock");
@@ -372,7 +419,9 @@ function updateResult() {
         days: Number(document.getElementById("days").value),
         dailyRate: Number(document.getElementById("dailyRate").value),
         eventSelect: Number(document.getElementById("eventSelect").value),
-        eventExtra: Number(document.getElementById("eventExtra").value)
+        eventExtra: Number(document.getElementById("eventExtra").value),
+        initialPulls: Number(document.getElementById("initialPulls").value),
+        isGuaranteed: document.getElementById("isGuaranteed").value
     });
 
     document.getElementById("immediatePulls").textContent = d.immediate;
@@ -380,9 +429,14 @@ function updateResult() {
 
     document.getElementById("stoneDetail").textContent =
         `デイリー ${d.dailyStone} / イベント ${d.eventStone} / 月パス ${d.passStone}`;
+    document.getElementById("weaponExtraInfo").textContent =
+    updateWeaponExtraInfo(d.total);
 
     document.getElementById("weaponResult").textContent =
         weaponText(d.total);
+    document.getElementById("weaponExtraInfo").textContent =
+        updateWeaponExtraInfo(d.total);
+
 }
 
 changeGame();
@@ -391,4 +445,5 @@ changeGame();
 </body>
 
 </html>
+
 
