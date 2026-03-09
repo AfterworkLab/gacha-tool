@@ -191,21 +191,16 @@
 
 <h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
 
-<div class="input-block">
-  <label>初期状態（何回回した）</label>
-  <input id="initialPulls" type="number" min="0" max="89" value="0">
-</div>
-
-<div class="input-block">
-  <label>初期状態（天井済？）</label>
-  <select id="isGuaranteed">
-    <option value="false">未確定</option>
-    <option value="true">天井済（確定）</option>
-  </select>
-</div>
-
-    
 <div id="futureBlock" class="input-block hidden">
+
+    <label>初期状態（何回回した）</label>
+    <input id="initialPulls" type="number" min="0" max="89" value="0" oninput="updateResult()">
+
+    <label>初期状態（天井済？）</label>
+    <select id="isGuaranteed" onchange="updateResult()">
+        <option value="false">未確定</option>
+        <option value="true">天井済（確定）</option>
+    </select>
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
@@ -237,7 +232,6 @@
     <label>次のピックアップまでの日数（自動計算）</label>
     <input id="days" type="number" value="0" oninput="updateResult()">
 
-    <!-- 月パス（3作品対応） -->
     <label id="passLabel">列車補給標章</label>
     <select id="passType" onchange="updateResult()">
         <option value="none">未購入</option>
@@ -344,7 +338,7 @@ function calculateGacha({
     days = 0,
     dailyRate = 1.0,
     eventSelect = 0,
-    eventExtra = 0
+    eventExtra = 0,
     initialPulls = 0,
     isGuaranteed = false
 }) {
@@ -498,6 +492,7 @@ changeGame();
 
 </body>
 </html>
+
 
 
 
