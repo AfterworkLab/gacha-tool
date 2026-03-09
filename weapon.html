@@ -322,7 +322,7 @@ function calculateGacha({
     days = 0,
     dailyRate = 1.0,
     eventSelect = 0,
-    eventExtra = 0
+    eventExtra = 0,
     initialPulls = 0,
     isGuaranteed = false
 }) {
@@ -343,30 +343,29 @@ function calculateGacha({
     const futureStone = dailyStone + eventStone + passStone;
 
     const futurePulls = Math.floor(futureStone / COST);
+
+    // 初期状態を total に加算
     const total = immediate + futurePulls + initialPulls;
 
-    
     return {
         immediate,
         futureStone,
         dailyStone,
         eventStone,
         passStone,
-        total
+        total,
+        initialPulls
     };
 }
 
-function weaponText(total) {
+function weaponText(total, initialPulls) {
     const cfg = getCfg();
     const HARD = cfg.hard;
     const SOFT = cfg.soft;
     const DOUBLE = cfg.double;
 
-    const remainNoMiss = total - (HARD - initialPulls);
-    const remainMiss = total - (DOUBLE - initialPulls);
-
-
-    const remainSoft = total - SOFT;
+    const remainNoMiss = (HARD - initialPulls) - total;
+    const remainMiss = (DOUBLE - initialPulls) - total;
 
     return (
         `すり抜けなし：1本獲得（残り ${remainNoMiss} 連）\n` +
@@ -429,14 +428,14 @@ function updateResult() {
 
     document.getElementById("stoneDetail").textContent =
         `デイリー ${d.dailyStone} / イベント ${d.eventStone} / 月パス ${d.passStone}`;
-    document.getElementById("weaponExtraInfo").textContent =
-    updateWeaponExtraInfo(d.total);
 
+    // メイン結果
     document.getElementById("weaponResult").textContent =
-        weaponText(d.total);
+        weaponText(d.total, d.initialPulls);
+
+    // 追加情報
     document.getElementById("weaponExtraInfo").textContent =
         updateWeaponExtraInfo(d.total);
-
 }
 
 changeGame();
@@ -445,5 +444,6 @@ changeGame();
 </body>
 
 </html>
+
 
 
