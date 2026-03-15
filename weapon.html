@@ -162,28 +162,19 @@
     <div class="comment" id="weaponResult"></div>
     <pre id="weaponExtraInfo"></pre>
 
-    <div class="sub-info" id="extraInfo"></div>
-
-    <div class="sub-info" id="extraInfo"></div>
-
 </div>
 
 <h2 class="foldable" onclick="toggleFold(this, 'futureBlock')">未来予測・詳細設定</h2>
-
-<div class="input-block">
-  <label>初期状態（何回回した）</label>
-  <input id="initialPulls" type="number" min="0" max="79" value="0">
-</div>
-
-<div class="input-block">
-  <label>初期状態（天井済？）</label>
-  <select id="isGuaranteed">
-    <option value="false">未確定</option>
-    <option value="true">天井済（確定）</option>
-  </select>
-</div>
-    
 <div id="futureBlock" class="input-block hidden">
+
+    <label>初期状態（何回回した）</label>
+    <input id="initialPulls" type="number" min="0" max="79" value="0" oninput="updateResult()">
+
+    <label>初期状態（天井済？）</label>
+    <select id="isGuaranteed" onchange="updateResult()">
+        <option value="false">未確定</option>
+        <option value="true">天井済（確定）</option>
+    </select>
 
     <label>ピックアップ日</label>
     <input id="pickupDate" type="date" onchange="updateDays()">
@@ -215,7 +206,6 @@
     <label>次のピックアップまでの日数（自動計算）</label>
     <input id="days" type="number" value="0" oninput="updateResult()">
 
-    <!-- 月パス -->
     <label id="passLabel">列車補給標章</label>
     <select id="passType" onchange="updateResult()">
         <option value="none">未購入</option>
@@ -230,12 +220,6 @@
 
 </div>
 
-<div style="text-align:center; margin-top:2em;">
-  <a href="https://afterwork-lab.hatenablog.com/">
-    <img src="https://cdn-ak.f.st-hatena.com/images/fotolife/a/afterwork/20260308/20260308214605.png" alt="Afterwork Lab ロゴ" style="width:160px;">
-  </a>
-</div>
-    
 <small>© 2026 Afterwork Lab All Rights Reserved.</small>
 
 <script>
@@ -323,8 +307,7 @@ function calculateGacha({
     dailyRate = 1.0,
     eventSelect = 0,
     eventExtra = 0,
-    initialPulls = 0,
-    isGuaranteed = false
+    initialPulls = 0
 }) {
     const cfg = getCfg();
     const COST = 160;
@@ -344,7 +327,6 @@ function calculateGacha({
 
     const futurePulls = Math.floor(futureStone / COST);
 
-    // 初期状態を total に加算
     const total = immediate + futurePulls + initialPulls;
 
     return {
@@ -353,8 +335,7 @@ function calculateGacha({
         dailyStone,
         eventStone,
         passStone,
-        total,
-        initialPulls
+        total
     };
 }
 
@@ -376,32 +357,20 @@ function weaponText(total, initialPulls) {
     );
 }
 
-function updateWeaponExtraInfo(total) {
+function updateWeaponExtraInfo(total, initialPulls) {
     const cfg = getCfg();
-    const HARD = cfg.hard;     // 80
-    const DOUBLE = cfg.double; // 160
-    const RATE = cfg.pickupRate; // 0.75
+    const HARD = cfg.hard;
+    const DOUBLE = cfg.double;
 
-    // 星5が出る回数
-    const star5 = Math.floor(total / HARD);
+    const remainNoMiss = (HARD - initialPulls) - total;
+    const remainMiss = (DOUBLE - initialPulls) - total;
 
-    // すべてすり抜けた場合（最大1回すり抜け → 次が確定）
-    const minTarget = Math.floor(total / DOUBLE); // 160連で1本確定
-    const minOff = star5 - minTarget;
-
-    // 確率通り（75%）の場合
-    const remainingStar5 = star5 - minTarget;
-    const expTarget = minTarget + Math.round(remainingStar5 * RATE);
-    const expOff = star5 - expTarget;
-
-    return (
-        `すべてすり抜けた場合：\n` +
-        `目的武器 ${minTarget}本 / すり抜け武器 ${minOff}本\n\n` +
-        `確率通りに引けた場合：\n` +
-        `目的武器 約${expTarget}本 / すり抜け武器 約${expOff}本`
-    );
+    document.getElementById("weaponExtraInfo").textContent =
+        `【追加情報】\n` +
+        `・すり抜けなし：残り ${remainNoMiss} 連\n` +
+        `・すり抜け1回：残り ${remainMiss} 連`;
 }
-    
+
 function updateResult() {
     const passType = document.getElementById("passType").value;
     const passDaysBlock = document.getElementById("passDaysBlock");
@@ -412,6 +381,8 @@ function updateResult() {
         passDaysBlock.classList.add("hidden");
     }
 
+    const initialPulls = Number(document.getElementById("initialPulls").value);
+
     const d = calculateGacha({
         starJade: Number(document.getElementById("starJade").value),
         tickets: Number(document.getElementById("tickets").value),
@@ -419,8 +390,7 @@ function updateResult() {
         dailyRate: Number(document.getElementById("dailyRate").value),
         eventSelect: Number(document.getElementById("eventSelect").value),
         eventExtra: Number(document.getElementById("eventExtra").value),
-        initialPulls: Number(document.getElementById("initialPulls").value),
-        isGuaranteed: document.getElementById("isGuaranteed").value
+        initialPulls
     });
 
     document.getElementById("immediatePulls").textContent = d.immediate;
@@ -429,21 +399,14 @@ function updateResult() {
     document.getElementById("stoneDetail").textContent =
         `デイリー ${d.dailyStone} / イベント ${d.eventStone} / 月パス ${d.passStone}`;
 
-    // メイン結果
     document.getElementById("weaponResult").textContent =
-        weaponText(d.total, d.initialPulls);
+        weaponText(d.total, initialPulls);
 
-    // 追加情報
-    document.getElementById("weaponExtraInfo").textContent =
-        updateWeaponExtraInfo(d.total);
+    updateWeaponExtraInfo(d.total, initialPulls);
 }
 
 changeGame();
 </script>
 
 </body>
-
 </html>
-
-
-
