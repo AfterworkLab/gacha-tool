@@ -1,0 +1,205 @@
+/* ============================================================
+   style.css  —  完全版デザイン
+   Afterwork Lab / 2026
+   ============================================================ */
+
+/* ------------------------------
+   全体
+   ------------------------------ */
+body {
+  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+  margin: 0;
+  padding: 0 16px;
+  line-height: 1.6;
+  transition: background-color 0.3s ease;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 24px;
+  border-left: 6px solid #888;
+  padding-left: 8px;
+}
+
+h3 {
+  font-size: 16px;
+  margin-top: 16px;
+  font-weight: bold;
+}
+
+/* ------------------------------
+   入力欄
+   ------------------------------ */
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  height: 44px;
+  margin: 6px 0 14px;
+  padding: 6px 10px;
+  font-size: 16px;
+  border: 1px solid #CCC;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* ------------------------------
+   ゲーム選択ボタン
+   ------------------------------ */
+.game-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.game-btn {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #AAA;
+  background: #FFF;
+  cursor: pointer;
+}
+
+.game-btn:hover {
+  background: #F0F0F0;
+}
+
+/* ------------------------------
+   キャラ／武器タブ（A案）
+   ------------------------------ */
+.banner-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.banner-tab {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #AAA;
+  background: #EEE;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.banner-tab.active {
+  background: #4A90E2;
+  color: white;
+  border-color: #4A90E2;
+}
+
+/* ------------------------------
+   現在の状態（B案）
+   ------------------------------ */
+.current-status {
+  margin: 12px 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* ------------------------------
+   詳細設定（折りたたみ）
+   ------------------------------ */
+.future-toggle {
+  width: 100%;
+  padding: 14px 0;
+  margin-top: 20px;
+  background: #DDE8FF;
+  border: 1px solid #AFC7FF;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.future-body {
+  margin-top: 12px;
+  padding: 12px;
+  background: #FFF;
+  border: 1px solid #DDD;
+  border-radius: 8px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ------------------------------
+   計算ボタン
+   ------------------------------ */
+.run-button {
+  width: 100%;
+  padding: 14px 0;
+  margin: 20px 0;
+  background: #4A90E2;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.run-button:hover {
+  background: #3A78C8;
+}
+
+/* ------------------------------
+   結果カード
+   ------------------------------ */
+.card {
+  background: #FFF;
+  padding: 16px;
+  margin: 20px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  border-left-color: #4A90E2;
+}
+
+/* ------------------------------
+   フッターロゴ
+   ------------------------------ */
+.footer-logo {
+  text-align: center;
+  margin-top: 40px;
+  padding: 20px 0;
+  opacity: 0.85;
+}
+
+.footer-logo img {
+  width: 160px;
+  height: auto;
+  margin-bottom: 8px;
+}
+
+.footer-logo .copyright {
+  font-size: 13px;
+  color: #555;
+}
+
+/* ------------------------------
+   スマホ最適化
+   ------------------------------ */
+@media (max-width: 480px) {
+  body {
+    padding: 0 12px;
+  }
+
+  .banner-tab {
+    font-size: 14px;
+    padding: 10px 0;
+  }
+
+  .run-button {
+    font-size: 16px;
+  }
