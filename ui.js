@@ -1,7 +1,8 @@
 /* ============================================================
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
-   仕様B：凸数到達時点の平均ガチャ回数
-   排出内訳：折りたたみ表示
+   仕様B：凸数到達モード
+   排出内訳：先頭に常時表示
+   平均ガチャ回数：削除
    ゲーム選択：active クラス対応
    Afterwork Lab / 2026
    ============================================================ */
@@ -314,23 +315,27 @@ function runSimulation() {
 
   const distribution = simulator.simulateDistribution(trials, initialState, totalPulls);
 
-  const expected = Array(8).fill(null);
-  for (let k = 1; k <= 7; k++) {
-    expected[k] = simulator.simulateForCopies(k, trials, initialState, totalPulls);
-  }
-
-  renderResults(distribution, expected);
+  renderResults(distribution);
 }
 
 /* ------------------------------------------------------------
-   結果描画（排出内訳：折りたたみ）
+   結果描画（排出内訳 → 最上段）
    ------------------------------------------------------------ */
-function renderResults(prob, expected) {
+function renderResults(prob) {
   const el = document.getElementById("results");
+
+  const avg5 = prob.reduce((a, b, i) => a + b * i, 0).toFixed(2);
 
   let html = `
     <div class="card">
-      <h2>★5ピックアップ入手確率（ちょうど）</h2>
+      <h2>排出内訳（平均）</h2>
+      <div>★5総数：${avg5}体</div>
+      <div>★5PU外：計算対象外（必要なら追加可能）</div>
+      <div>★4総数：計算対象外（必要なら追加可能）</div>
+    </div>
+
+    <div class="card">
+      <h2>★5ピックアップ入手確率</h2>
   `;
 
   prob.forEach((p, i) => {
@@ -340,44 +345,5 @@ function renderResults(prob, expected) {
 
   html += `</div>`;
 
-  html += `
-    <div class="card">
-      <h2>平均ガチャ回数（その凸数に到達した人のみ）</h2>
-  `;
-
-  expected.forEach((v, i) => {
-    if (v) {
-      const label = i === 7 ? "完凸（7体）" : `${i}凸`;
-      html += `<div>${label}： ${v.toFixed(1)}連</div>`;
-    }
-  });
-
-  html += `</div>`;
-
-  html += `
-    <button id="detail-toggle" class="future-toggle">
-      ▼ 詳細（排出内訳）
-    </button>
-
-    <div id="detail-body" class="future-body hidden">
-      <div class="card">
-        <h2>排出内訳（平均）</h2>
-        <div>★5総数：${(prob.reduce((a, b, i) => a + b * i, 0)).toFixed(2)}体</div>
-        <div>★4総数：計算対象外（必要なら追加可能）</div>
-      </div>
-    </div>
-  `;
-
   el.innerHTML = html;
-
-  document.getElementById("detail-toggle").addEventListener("click", () => {
-    const body = document.getElementById("detail-body");
-    const toggle = document.getElementById("detail-toggle");
-
-    body.classList.toggle("hidden");
-
-    toggle.textContent = body.classList.contains("hidden")
-      ? "▼ 詳細（排出内訳）"
-      : "▲ 詳細（排出内訳）";
-  });
 }
