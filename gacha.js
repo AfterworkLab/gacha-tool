@@ -33,9 +33,13 @@ class GachaEngine {
     let rate5 = cfg.rates.base5;
 
     if (state.pity5 + 1 === cfg.pity.hard5) {
+      // ハードピティ：次の1回は必ず★5
       rate5 = 1.0;
     } else if (state.pity5 >= cfg.pity.soft5Start) {
-      const extra = (state.pity5 - cfg.pity.soft5Start + 1) * cfg.softPityCurve.increasePerPull5;
+      // ソフトピティ：一定回数以降は確率上昇
+      const extra =
+        (state.pity5 - cfg.pity.soft5Start + 1) *
+        cfg.softPityCurve.increasePerPull5;
       rate5 = Math.min(1.0, cfg.rates.base5 + extra);
     }
 
@@ -67,15 +71,19 @@ class GachaEngine {
       let isPU = false;
 
       if (state.guarantee5) {
+        // すり抜け後のPU確定
         isPU = true;
       } else {
+        // 50％勝負（など）
         isPU = Math.random() < cfg.guarantee.fiveStar.pickupRate;
       }
 
       const newState = {
         pity5: 0,
         pity4: state.pity4 + 1,
+        // すり抜けたら次回PU確定、PUならフラグ解除
         guarantee5: isPU ? false : true,
+        // PUを引いた分だけカウント
         obtained5: state.obtained5 + (isPU ? 1 : 0)
       };
 
@@ -121,7 +129,8 @@ class MonteCarloSimulator {
     this.engine = engine;
   }
 
-  // k凸に到達するまでの平均ガチャ回数を求める
+  // k凸に到達するまでの平均ガチャ回数
+  // ※ ただし「PUを引いてもガチャは止めず、maxPulls まで回し切る」
   simulateForCopies(targetCopies, trials, initialState, maxPulls) {
     let totalPulls = 0;
     let successCount = 0;
@@ -130,7 +139,10 @@ class MonteCarloSimulator {
       let state = { ...initialState };
       let pulls = 0;
 
-      while (pulls < maxPulls && state.obtained5 < targetCopies) {
+      // ★ 修正ポイント：
+      //   「PUを引いたら止める」のではなく、
+      //   maxPulls まで必ず回し切る
+      while (pulls < maxPulls) {
         const result = this.engine.rollOnce(state);
         state = result.newState;
         pulls++;
