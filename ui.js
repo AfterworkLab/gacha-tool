@@ -18,7 +18,52 @@ window.addEventListener("DOMContentLoaded", () => {
   renderSimulationSettings();
   renderRunButton();
   updateBackgroundColor();
+  updateGameLabels();
 });
+
+
+/* ------------------------------------------------------------
+   ゲームごとのラベル定義
+   ------------------------------------------------------------ */
+function getLabelsForGame(game) {
+  if (game === "StarRail") {
+    return {
+      stones: "石（星玉）",
+      ticket: "チケット",
+      paid: "課金石（往日の夢華）",
+      pass: "月パス"
+    };
+  }
+  if (game === "Genshin") {
+    return {
+      stones: "石（原石）",
+      ticket: "チケット",
+      paid: "課金石（創世結晶）",
+      pass: "月パス"
+    };
+  }
+  // Zenless
+  return {
+    stones: "石（ポリクローム）",
+    ticket: "チケット",
+    paid: "課金石（モノクローム）",
+    pass: "月パス"
+  };
+}
+
+function updateGameLabels() {
+  const labels = getLabelsForGame(currentGame);
+
+  const ls = document.getElementById("label-stones");
+  const lt = document.getElementById("label-tickets");
+  const lp = document.getElementById("label-paid");
+  const lpass = document.getElementById("label-pass");
+
+  if (ls) ls.textContent = labels.stones;
+  if (lt) lt.textContent = labels.ticket;
+  if (lp) lp.textContent = labels.paid;
+  if (lpass) lpass.textContent = labels.pass;
+}
 
 
 /* ------------------------------------------------------------
@@ -41,6 +86,7 @@ function renderGameSelect() {
       currentGame = btn.dataset.game;
       updateBackgroundColor();
       updateCurrentStatusLabel();
+      updateGameLabels();
     });
   });
 }
@@ -87,10 +133,10 @@ function renderResourceInputs() {
   el.innerHTML = `
     <h2>所持リソース</h2>
 
-    <label>石（星玉 / 原石 / ポリクローム）</label>
+    <label id="label-stones"></label>
     <input id="input-stones" type="number" value="0">
 
-    <label>チケット</label>
+    <label id="label-tickets"></label>
     <input id="input-tickets" type="number" value="0">
 
     <div id="calc-now"></div>
@@ -132,7 +178,7 @@ function renderFutureResourceSection() {
 
     <div id="future-body" class="future-body hidden">
 
-      <h3>課金石（往日の夢華 / 創世結晶 / モノクローム）</h3>
+      <h3 id="label-paid"></h3>
       <input id="input-paid" type="number" value="0">
 
       <h3>ピックアップ日</h3>
@@ -161,7 +207,7 @@ function renderFutureResourceSection() {
 
       <input id="input-event-extra" type="number" value="0" min="0" max="499">
 
-      <h3>月パス</h3>
+      <h3 id="label-pass"></h3>
       <select id="input-pass">
         <option value="none">未購入</option>
         <option value="plan">購入予定</option>
@@ -265,16 +311,25 @@ function runSimulation() {
   const engine = new GachaEngine(config);
   const simulator = new MonteCarloSimulator(engine);
 
+  const pity5 = Number(document.getElementById("input-pity5").value) || 0;
+  const guarantee5 = document.getElementById("input-guarantee5").value === "true";
+
+  const stones = Number(document.getElementById("input-stones").value) || 0;
+  const tickets = Number(document.getElementById("input-tickets").value) || 0;
+
+  // 1連＝石160個換算
+  const totalPulls = Math.max(0, Math.floor(stones / 160) + tickets);
+
   const initialState = {
-    pity5: Number(document.getElementById("input-pity5").value),
+    pity5,
     pity4: 0,
-    guarantee5: document.getElementById("input-guarantee5").value === "true",
+    guarantee5,
     obtained5: 0
   };
 
   const trials = Number(document.getElementById("input-trials").value);
 
-  const summary = simulator.runSimulation(trials, initialState);
+  const summary = simulator.runSimulation(trials, initialState, totalPulls);
 
   renderResults(summary);
 }
@@ -288,11 +343,18 @@ function renderResults(summary) {
 
   let html = `
     <div class="card">
-      <h2>★5ピックアップ入手確率</h2>
+      <h2>★5ピックアップ入手確率（ちょうど）</h2>
   `;
 
   summary.probabilities.forEach((p, i) => {
-    const label = i === 7 ? "完凸（7体）" : `${i}体`;
+    let label;
+    if (i === 0) {
+      label = "0体";
+    } else if (i === 7) {
+      label = "完凸（7体以上）";
+    } else {
+      label = `${i}体`;
+    }
     html += `<div>${label}： ${(p * 100).toFixed(1)}%</div>`;
   });
 
@@ -300,12 +362,12 @@ function renderResults(summary) {
 
   html += `
     <div class="card">
-      <h2>平均ガチャ回数（引けた人のみ）</h2>
+      <h2>平均ガチャ回数（その凸数以上引けた人のみ）</h2>
   `;
 
   summary.expectedPulls.forEach((v, i) => {
     if (v) {
-      const label = i === 7 ? "完凸（7体）" : `${i}体`;
+      const label = i === 7 ? "完凸（7体以上）" : `${i}体以上`;
       html += `<div>${label}： ${v.toFixed(1)}連</div>`;
     }
   });
