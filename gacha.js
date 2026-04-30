@@ -189,4 +189,34 @@ class MonteCarloSimulator {
     /* ------------------------------
        条件付き期待値（案B）
        ------------------------------ */
-    const expectedPulls = Array(8).
+    const expectedPulls = Array(8).fill(null);
+    const expectedStones = Array(8).fill(null);
+
+    for (let k = 1; k <= 7; k++) {
+      const filtered = results.filter(r => r.puCount >= k);
+      if (filtered.length === 0) continue;
+
+      const avgPulls = filtered.reduce((s, r) => s + r.pulls, 0) / filtered.length;
+      expectedPulls[k] = avgPulls;
+      expectedStones[k] = avgPulls * 160;
+    }
+
+    /* ------------------------------
+       排出内訳（平均）
+       ------------------------------ */
+    const avg5 = results.reduce((s, r) => s + r.fiveStarCount, 0) / N;
+    const avgOff = results.reduce((s, r) => s + r.offRateCount, 0) / N;
+    const avg4 = results.reduce((s, r) => s + r.fourStarCount, 0) / N;
+
+    return {
+      probabilities: prob,
+      expectedPulls,
+      expectedStones,
+      dropSummary: {
+        avgFiveStar: avg5,
+        avgOffRate: avgOff,
+        avgFourStar: avg4
+      }
+    };
+  }
+}
