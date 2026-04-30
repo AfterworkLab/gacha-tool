@@ -1,5 +1,5 @@
 /* ============================================================
-   gacha.js  —  ガチャ1回ロジック + モンテカルロ
+   gacha.js  —  ガチャ1回ロジック + 凸数到達モード（仕様B）
    Afterwork Lab / 2026
    ============================================================ */
 
@@ -83,7 +83,7 @@ class GachaEngine {
     }
 
     /* ------------------------------
-       ★4が出た場合（すり抜けなし）
+       ★4が出た場合
        ------------------------------ */
     if (rarity === 4) {
       const isPU = Math.random() < (1 / cfg.featured.count4);
@@ -114,111 +114,57 @@ class GachaEngine {
 
 
 /* ------------------------------------------------------------
-   ★ モンテカルロシミュレーション
+   ★ 凸数到達モード（仕様B）
    ------------------------------------------------------------ */
 class MonteCarloSimulator {
   constructor(engine) {
     this.engine = engine;
   }
 
-  // maxPulls 回だけ回したときの分布を求める
-  runSimulation(trials, initialState, maxPulls) {
-    const results = [];
+  // k凸に到達するまでの平均ガチャ回数を求める
+  simulateForCopies(targetCopies, trials, initialState, maxPulls) {
+    let totalPulls = 0;
+    let successCount = 0;
 
-    for (let i = 0; i < trials; i++) {
-      results.push(this.runSingleTrial(initialState, maxPulls));
+    for (let t = 0; t < trials; t++) {
+      let state = { ...initialState };
+      let pulls = 0;
+
+      while (pulls < maxPulls && state.obtained5 < targetCopies) {
+        const result = this.engine.rollOnce(state);
+        state = result.newState;
+        pulls++;
+      }
+
+      if (state.obtained5 >= targetCopies) {
+        totalPulls += pulls;
+        successCount++;
+      }
     }
 
-    return this.aggregate(results);
+    if (successCount === 0) return null;
+
+    return totalPulls / successCount;
   }
 
-  /* ------------------------------
-     1試行（maxPulls 回だけ回す）
-     ------------------------------ */
-  runSingleTrial(initial, maxPulls) {
-    let state = { ...initial };
-    let pulls = 0;
+  // 0〜7凸の確率（ちょうど）
+  simulateDistribution(trials, initialState, maxPulls) {
+    const counts = Array(8).fill(0);
 
-    let fiveStarCount = 0;
-    let offRateCount = 0;
-    let fourStarCount = 0;
+    for (let t = 0; t < trials; t++) {
+      let state = { ...initialState };
+      let pulls = 0;
 
-    while (pulls < maxPulls) {
-      const result = this.engine.rollOnce(state);
-      state = result.newState;
-      pulls++;
-
-      if (result.rarity === 5) {
-        fiveStarCount++;
-        if (!result.isPU) offRateCount++;
+      while (pulls < maxPulls) {
+        const result = this.engine.rollOnce(state);
+        state = result.newState;
+        pulls++;
       }
-      if (result.rarity === 4) {
-        fourStarCount++;
-      }
+
+      const k = Math.min(state.obtained5, 7);
+      counts[k]++;
     }
 
-    return {
-      pulls,
-      stonesUsed: pulls * 160,
-      puCount: state.obtained5,
-      fiveStarCount,
-      offRateCount,
-      fourStarCount
-    };
-  }
-
-  /* ------------------------------
-     集計（確率・期待値）
-     ------------------------------ */
-  aggregate(results) {
-    const N = results.length;
-
-    /* ------------------------------
-       凸段階ごとの「ちょうど k体」確率
-       ------------------------------ */
-    const prob = Array(8).fill(0); // 0〜7枚（7は7体以上をまとめる）
-
-    results.forEach(r => {
-      const k = Math.min(r.puCount, 7);
-      prob[k]++;
-    });
-
-    for (let i = 0; i < prob.length; i++) {
-      prob[i] = prob[i] / N;
-    }
-
-    /* ------------------------------
-       条件付き期待値（案B）
-       「k体以上引けた人の平均ガチャ回数」
-       ------------------------------ */
-    const expectedPulls = Array(8).fill(null);
-    const expectedStones = Array(8).fill(null);
-
-    for (let k = 1; k <= 7; k++) {
-      const filtered = results.filter(r => r.puCount >= k);
-      if (filtered.length === 0) continue;
-
-      const avgPulls = filtered.reduce((s, r) => s + r.pulls, 0) / filtered.length;
-      expectedPulls[k] = avgPulls;
-      expectedStones[k] = avgPulls * 160;
-    }
-
-    /* ------------------------------
-       排出内訳（平均）
-       ------------------------------ */
-    const avg5 = results.reduce((s, r) => s + r.fiveStarCount, 0) / N;
-    const avgOff = results.reduce((s, r) => s + r.offRateCount, 0) / N;
-    const avg4 = results.reduce((s, r) => s + r.fourStarCount, 0) / N;
-
-    return {
-      probabilities: prob,
-      expectedPulls,
-      expectedStones,
-      dropSummary: {
-        avgFiveStar: avg5,
-        avgOffRate: avgOff,
-        avgFourStar: avg4
-      }
-    };
+    return counts.map(c => c / trials);
   }
 }
