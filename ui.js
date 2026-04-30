@@ -193,3 +193,133 @@ function renderSimulationSettings() {
   const el = document.getElementById("simulation-settings");
 
   el.innerHTML = `
+    <h2>シミュレーション精度</h2>
+    <select id="input-trials">
+      <option value="10000">1万回（軽い）</option>
+      <option value="50000">5万回（標準）</option>
+      <option value="100000">10万回（高精度）</option>
+    </select>
+  `;
+}
+
+
+/* ------------------------------------------------------------
+   ⑦ 計算ボタン
+   ------------------------------------------------------------ */
+function renderRunButton() {
+  const el = document.getElementById("run-button");
+
+  el.innerHTML = `
+    <div id="current-status" class="current-status"></div>
+
+    <button id="run-sim" class="run-button">
+      計算する
+    </button>
+  `;
+
+  updateCurrentStatusLabel();
+
+  document.getElementById("run-sim").addEventListener("click", runSimulation);
+}
+
+
+/* ------------------------------------------------------------
+   現在の状態ラベル（A+B案）
+   ------------------------------------------------------------ */
+function updateCurrentStatusLabel() {
+  const el = document.getElementById("current-status");
+
+  const gameName = {
+    StarRail: "崩壊スターレイル",
+    Genshin: "原神",
+    Zenless: "ゼンゼロ"
+  }[currentGame];
+
+  const bannerName = currentBanner === "character" ? "キャラガチャ" : "武器ガチャ";
+
+  el.textContent = `現在：${gameName} / ${bannerName}`;
+}
+
+
+/* ------------------------------------------------------------
+   背景色切り替え
+   ------------------------------------------------------------ */
+function updateBackgroundColor() {
+  const colors = {
+    StarRail: "#E8F1FF",
+    Genshin: "#FFF7D9",
+    Zenless: "#F4E8FF"
+  };
+
+  document.body.style.backgroundColor = colors[currentGame];
+}
+
+
+/* ------------------------------------------------------------
+   ⑧ シミュレーション実行
+   ------------------------------------------------------------ */
+function runSimulation() {
+  const key = `${currentGame}_${currentBanner}`;
+  const config = GAME_CONFIGS[key];
+
+  const engine = new GachaEngine(config);
+  const simulator = new MonteCarloSimulator(engine);
+
+  const initialState = {
+    pity5: Number(document.getElementById("input-pity5").value),
+    pity4: 0,
+    guarantee5: document.getElementById("input-guarantee5").value === "true",
+    obtained5: 0
+  };
+
+  const trials = Number(document.getElementById("input-trials").value);
+
+  const summary = simulator.runSimulation(trials, initialState);
+
+  renderResults(summary);
+}
+
+
+/* ------------------------------------------------------------
+   結果描画
+   ------------------------------------------------------------ */
+function renderResults(summary) {
+  const el = document.getElementById("results");
+
+  let html = `
+    <div class="card">
+      <h2>★5ピックアップ入手確率</h2>
+  `;
+
+  summary.probabilities.forEach((p, i) => {
+    const label = i === 7 ? "完凸（7体）" : `${i}体`;
+    html += `<div>${label}： ${(p * 100).toFixed(1)}%</div>`;
+  });
+
+  html += `</div>`;
+
+  html += `
+    <div class="card">
+      <h2>平均ガチャ回数（引けた人のみ）</h2>
+  `;
+
+  summary.expectedPulls.forEach((v, i) => {
+    if (v) {
+      const label = i === 7 ? "完凸（7体）" : `${i}体`;
+      html += `<div>${label}： ${v.toFixed(1)}連</div>`;
+    }
+  });
+
+  html += `</div>`;
+
+  html += `
+    <div class="card">
+      <h2>排出内訳（平均）</h2>
+      <div>★5総数： ${summary.dropSummary.avgFiveStar.toFixed(2)}体</div>
+      <div>★5ピックアップ外： ${summary.dropSummary.avgOffRate.toFixed(2)}体</div>
+      <div>★4総数： ${summary.dropSummary.avgFourStar.toFixed(2)}体</div>
+    </div>
+  `;
+
+  el.innerHTML = html;
+}
