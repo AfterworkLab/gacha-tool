@@ -121,20 +121,21 @@ class MonteCarloSimulator {
     this.engine = engine;
   }
 
-  runSimulation(trials, initialState) {
+  // maxPulls 回だけ回したときの分布を求める
+  runSimulation(trials, initialState, maxPulls) {
     const results = [];
 
     for (let i = 0; i < trials; i++) {
-      results.push(this.runSingleTrial(initialState));
+      results.push(this.runSingleTrial(initialState, maxPulls));
     }
 
     return this.aggregate(results);
   }
 
   /* ------------------------------
-     1試行（完凸まで回す）
+     1試行（maxPulls 回だけ回す）
      ------------------------------ */
-  runSingleTrial(initial) {
+  runSingleTrial(initial, maxPulls) {
     let state = { ...initial };
     let pulls = 0;
 
@@ -142,7 +143,7 @@ class MonteCarloSimulator {
     let offRateCount = 0;
     let fourStarCount = 0;
 
-    while (state.obtained5 < 7) {  // 完凸＝7枚
+    while (pulls < maxPulls) {
       const result = this.engine.rollOnce(state);
       state = result.newState;
       pulls++;
@@ -173,13 +174,13 @@ class MonteCarloSimulator {
     const N = results.length;
 
     /* ------------------------------
-       凸段階ごとの確率
+       凸段階ごとの「ちょうど k体」確率
        ------------------------------ */
-    const prob = Array(8).fill(0); // 0〜7枚
+    const prob = Array(8).fill(0); // 0〜7枚（7は7体以上をまとめる）
 
     results.forEach(r => {
       const k = Math.min(r.puCount, 7);
-      for (let i = 0; i <= k; i++) prob[i]++;
+      prob[k]++;
     });
 
     for (let i = 0; i < prob.length; i++) {
@@ -188,6 +189,7 @@ class MonteCarloSimulator {
 
     /* ------------------------------
        条件付き期待値（案B）
+       「k体以上引けた人の平均ガチャ回数」
        ------------------------------ */
     const expectedPulls = Array(8).fill(null);
     const expectedStones = Array(8).fill(null);
