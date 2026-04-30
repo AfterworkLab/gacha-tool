@@ -1,6 +1,8 @@
 /* ============================================================
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
    仕様B：凸数到達時点の平均ガチャ回数
+   排出内訳：折りたたみ表示
+   ゲーム選択：active クラス対応
    Afterwork Lab / 2026
    ============================================================ */
 
@@ -65,7 +67,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ------------------------------------------------------------
-   ① ゲーム選択
+   ① ゲーム選択（active クラス対応）
    ------------------------------------------------------------ */
 function renderGameSelect() {
   const el = document.getElementById("game-select");
@@ -82,11 +84,17 @@ function renderGameSelect() {
   document.querySelectorAll(".game-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       currentGame = btn.dataset.game;
+
+      document.querySelectorAll(".game-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
       updateBackgroundColor();
       updateCurrentStatusLabel();
       updateGameLabels();
     });
   });
+
+  document.querySelector(`.game-btn[data-game="${currentGame}"]`).classList.add("active");
 }
 
 /* ------------------------------------------------------------
@@ -315,7 +323,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   結果描画
+   結果描画（排出内訳：折りたたみ）
    ------------------------------------------------------------ */
 function renderResults(prob, expected) {
   const el = document.getElementById("results");
@@ -346,5 +354,30 @@ function renderResults(prob, expected) {
 
   html += `</div>`;
 
+  html += `
+    <button id="detail-toggle" class="future-toggle">
+      ▼ 詳細（排出内訳）
+    </button>
+
+    <div id="detail-body" class="future-body hidden">
+      <div class="card">
+        <h2>排出内訳（平均）</h2>
+        <div>★5総数：${(prob.reduce((a, b, i) => a + b * i, 0)).toFixed(2)}体</div>
+        <div>★4総数：計算対象外（必要なら追加可能）</div>
+      </div>
+    </div>
+  `;
+
   el.innerHTML = html;
+
+  document.getElementById("detail-toggle").addEventListener("click", () => {
+    const body = document.getElementById("detail-body");
+    const toggle = document.getElementById("detail-toggle");
+
+    body.classList.toggle("hidden");
+
+    toggle.textContent = body.classList.contains("hidden")
+      ? "▼ 詳細（排出内訳）"
+      : "▲ 詳細（排出内訳）";
+  });
 }
