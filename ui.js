@@ -56,9 +56,7 @@ window.addEventListener("DOMContentLoaded", () => {
   renderGameSelect();
   renderBannerTabs();
   renderResourceInputs();
-  renderCurrentStateInputs();
-  renderFutureResourceSection();
-  renderSimulationSettings();
+  renderFutureResourceSection();   // ← 現在のガチャ状況もここに統合
   renderRunButton();
   updateBackgroundColor();
   updateGameLabels();
@@ -87,7 +85,6 @@ function renderGameSelect() {
       btn.classList.add("active");
 
       updateBackgroundColor();
-      updateCurrentStatusLabel();
       updateGameLabels();
     });
   });
@@ -111,13 +108,11 @@ function renderBannerTabs() {
   document.getElementById("tab-character").addEventListener("click", () => {
     currentBanner = "character";
     updateBannerTabs();
-    updateCurrentStatusLabel();
   });
 
   document.getElementById("tab-weapon").addEventListener("click", () => {
     currentBanner = "weapon";
     updateBannerTabs();
-    updateCurrentStatusLabel();
   });
 }
 
@@ -150,33 +145,7 @@ function renderResourceInputs() {
 }
 
 /* ------------------------------------------------------------
-   ④ 現在のガチャ状況（横並び）
-   ------------------------------------------------------------ */
-function renderCurrentStateInputs() {
-  const el = document.getElementById("current-state");
-
-  el.innerHTML = `
-    <h2>現在のガチャ状況</h2>
-
-    <div class="row-2col">
-      <div class="col">
-        <label>現在の★5カウント（今何連目か）</label>
-        <input id="input-pity5" type="number" value="0">
-      </div>
-
-      <div class="col">
-        <label>次の★5はピックアップ確定？</label>
-        <select id="input-guarantee5">
-          <option value="false">未確定</option>
-          <option value="true">確定</option>
-        </select>
-      </div>
-    </div>
-  `;
-}
-
-/* ------------------------------------------------------------
-   ⑤ 未来の石（ピックアップ日・デイリー・月パス追加）
+   ④ 未来の石（詳細設定）
    ------------------------------------------------------------ */
 function renderFutureResourceSection() {
   const el = document.getElementById("future-resources");
@@ -188,6 +157,8 @@ function renderFutureResourceSection() {
   const dd = String(today.getDate()).padStart(2, "0");
   const todayStr = `${yyyy}-${mm}-${dd}`;
 
+  const labels = getLabelsForGame(currentGame);
+
   el.innerHTML = `
     <button id="future-toggle" class="future-toggle">
       ▼ 未来の石・詳細設定（タップして開く）
@@ -195,9 +166,11 @@ function renderFutureResourceSection() {
 
     <div id="future-body" class="future-body hidden">
 
+      <!-- 有償石 -->
       <h3 id="label-paid"></h3>
       <input id="input-paid" type="number" value="0">
 
+      <!-- イベント石 -->
       <h3>イベント石</h3>
       <div class="row-2col">
         <div class="col">
@@ -215,8 +188,33 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
-      <h3>ピックアップ日・デイリー・月パス</h3>
+      <!-- 現在のガチャ状況（移動） -->
+      <h3>現在のガチャ状況</h3>
       <div class="row-2col">
+        <div class="col">
+          <label>現在の★5カウント</label>
+          <input id="input-pity5" type="number" value="0">
+        </div>
+
+        <div class="col">
+          <label>次の★5はPU確定？</label>
+          <select id="input-guarantee5">
+            <option value="false">未確定</option>
+            <option value="true">確定</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ピックアップ日・デイリー・月パス -->
+      <h3>ピックアップ日・デイリー達成率・${labels.pass}</h3>
+
+      <div class="row-3col label-row">
+        <div class="col">ピックアップ日</div>
+        <div class="col">デイリー達成率</div>
+        <div class="col">${labels.pass}</div>
+      </div>
+
+      <div class="row-3col">
         <div class="col">
           <input id="input-pickup-date" type="date" min="${todayStr}">
         </div>
@@ -238,6 +236,14 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
+      <!-- シミュレーション精度（最後に移動） -->
+      <h3>シミュレーション精度</h3>
+      <select id="input-trials">
+        <option value="10000">1万回（軽い）</option>
+        <option value="50000">5万回（標準）</option>
+        <option value="100000">10万回（高精度）</option>
+      </select>
+
     </div>
   `;
 
@@ -254,72 +260,22 @@ function renderFutureResourceSection() {
 }
 
 /* ------------------------------------------------------------
-   ⑥ シミュレーション精度
-   ------------------------------------------------------------ */
-function renderSimulationSettings() {
-  const el = document.getElementById("simulation-settings");
-
-  el.innerHTML = `
-    <h2>シミュレーション精度</h2>
-    <select id="input-trials">
-      <option value="10000">1万回（軽い）</option>
-      <option value="50000">5万回（標準）</option>
-      <option value="100000">10万回（高精度）</option>
-    </select>
-  `;
-}
-
-/* ------------------------------------------------------------
-   ⑦ 計算ボタン
+   ⑤ 計算ボタン
    ------------------------------------------------------------ */
 function renderRunButton() {
   const el = document.getElementById("run-button");
 
   el.innerHTML = `
-    <div id="current-status" class="current-status"></div>
-
     <button id="run-sim" class="run-button">
       計算する
     </button>
   `;
 
-  updateCurrentStatusLabel();
-
   document.getElementById("run-sim").addEventListener("click", runSimulation);
 }
 
 /* ------------------------------------------------------------
-   現在の状態ラベル
-   ------------------------------------------------------------ */
-function updateCurrentStatusLabel() {
-  const el = document.getElementById("current-status");
-
-  const gameName = {
-    StarRail: "崩壊スターレイル",
-    Genshin: "原神",
-    Zenless: "ゼンゼロ"
-  }[currentGame];
-
-  const bannerName = currentBanner === "character" ? "キャラガチャ" : "武器ガチャ";
-
-  el.textContent = `現在：${gameName} / ${bannerName}`;
-}
-
-/* ------------------------------------------------------------
-   背景色切り替え
-   ------------------------------------------------------------ */
-function updateBackgroundColor() {
-  const colors = {
-    StarRail: "#E8F1FF",
-    Genshin: "#FFF7D9",
-    Zenless: "#F4E8FF"
-  };
-
-  document.body.style.backgroundColor = colors[currentGame];
-}
-
-/* ------------------------------------------------------------
-   ⑧ シミュレーション実行（未来石計算を追加）
+   ⑥ シミュレーション実行
    ------------------------------------------------------------ */
 function runSimulation() {
   const key = `${currentGame}_${currentBanner}`;
@@ -339,7 +295,7 @@ function runSimulation() {
   const eventExtra = Number(document.getElementById("input-event-extra").value) || 0;
 
   /* ------------------------------
-     未来石：ピックアップ日
+     ピックアップ日
      ------------------------------ */
   const pickupStr = document.getElementById("input-pickup-date").value;
   let diffDays = 0;
@@ -388,7 +344,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   結果描画
+   ⑦ 結果描画
    ------------------------------------------------------------ */
 function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
   const el = document.getElementById("results");
@@ -398,6 +354,9 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
 
   const avg5NonPU = result.avg5NonPU.toFixed(2);
   const avg4 = result.avg4.toFixed(2);
+
+  const dailyPulls = (dailyStones / 160).toFixed(2);
+  const passPulls = (passStones / 160).toFixed(2);
 
   let html = `
     <div class="card">
@@ -412,8 +371,8 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
       <hr>
 
       <div>未来日数：${diffDays}日</div>
-      <div>デイリー石：${dailyStones}個</div>
-      <div>月パス石：${passStones}個</div>
+      <div>デイリー石：${dailyStones}個（${dailyPulls}連分）</div>
+      <div>月パス石：${passStones}個（${passPulls}連分）</div>
     </div>
 
     <div class="card">
@@ -422,7 +381,8 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
 
   prob.forEach((p, i) => {
     const label = i === 7 ? "完凸（7体以上）" : `${i}体`;
-    html += `<div>${label}： ${(p * 100).toFixed(2)}%</div>`;
+    const display = (p === 1) ? "入手確定" : `${(p * 100).toFixed(2)}%`;
+    html += `<div>${label}： ${display}</div>`;
   });
 
   html += `</div>`;
