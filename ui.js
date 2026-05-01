@@ -1,9 +1,6 @@
 /* ============================================================
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
    仕様B：凸数到達モード
-   排出内訳：先頭に常時表示
-   平均ガチャ回数：削除
-   ゲーム選択：active クラス対応
    Afterwork Lab / 2026
    ============================================================ */
 
@@ -68,7 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ------------------------------------------------------------
-   ① ゲーム選択（active クラス対応）
+   ① ゲーム選択
    ------------------------------------------------------------ */
 function renderGameSelect() {
   const el = document.getElementById("game-select");
@@ -130,7 +127,7 @@ function updateBannerTabs() {
 }
 
 /* ------------------------------------------------------------
-   ③ 所持リソース
+   ③ 所持リソース（横並び対応）
    ------------------------------------------------------------ */
 function renderResourceInputs() {
   const el = document.getElementById("resources");
@@ -138,16 +135,22 @@ function renderResourceInputs() {
   el.innerHTML = `
     <h2>所持リソース</h2>
 
-    <label id="label-stones"></label>
-    <input id="input-stones" type="number" value="0">
+    <div class="row-2col">
+      <div class="col">
+        <label id="label-stones"></label>
+        <input id="input-stones" type="number" value="0">
+      </div>
 
-    <label id="label-tickets"></label>
-    <input id="input-tickets" type="number" value="0">
+      <div class="col">
+        <label id="label-tickets"></label>
+        <input id="input-tickets" type="number" value="0">
+      </div>
+    </div>
   `;
 }
 
 /* ------------------------------------------------------------
-   ④ 現在のガチャ状況
+   ④ 現在のガチャ状況（横並び対応）
    ------------------------------------------------------------ */
 function renderCurrentStateInputs() {
   const el = document.getElementById("current-state");
@@ -155,14 +158,20 @@ function renderCurrentStateInputs() {
   el.innerHTML = `
     <h2>現在のガチャ状況</h2>
 
-    <label>現在の★5カウント（今何連目か）</label>
-    <input id="input-pity5" type="number" value="0">
+    <div class="row-2col">
+      <div class="col">
+        <label>現在の★5カウント（今何連目か）</label>
+        <input id="input-pity5" type="number" value="0">
+      </div>
 
-    <label>次の★5はピックアップ確定？</label>
-    <select id="input-guarantee5">
-      <option value="false">未確定</option>
-      <option value="true">確定</option>
-    </select>
+      <div class="col">
+        <label>次の★5はピックアップ確定？</label>
+        <select id="input-guarantee5">
+          <option value="false">未確定</option>
+          <option value="true">確定</option>
+        </select>
+      </div>
+    </div>
   `;
 }
 
@@ -183,15 +192,21 @@ function renderFutureResourceSection() {
       <input id="input-paid" type="number" value="0">
 
       <h3>イベント石</h3>
-      <select id="input-event-main">
-        <option value="0">0</option>
-        <option value="500">500</option>
-        <option value="1000">1000</option>
-        <option value="1500">1500</option>
-        <option value="2000">2000</option>
-      </select>
+      <div class="row-2col">
+        <div class="col">
+          <select id="input-event-main">
+            <option value="0">0</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="1500">1500</option>
+            <option value="2000">2000</option>
+          </select>
+        </div>
 
-      <input id="input-event-extra" type="number" value="0" min="0" max="499">
+        <div class="col">
+          <input id="input-event-extra" type="number" value="0" min="0" max="499">
+        </div>
+      </div>
 
       <h3 id="label-pass"></h3>
       <select id="input-pass">
@@ -281,7 +296,7 @@ function updateBackgroundColor() {
 }
 
 /* ------------------------------------------------------------
-   ⑧ シミュレーション実行（仕様B）
+   ⑧ シミュレーション実行
    ------------------------------------------------------------ */
 function runSimulation() {
   const key = `${currentGame}_${currentBanner}`;
@@ -308,30 +323,39 @@ function runSimulation() {
     pity5,
     pity4: 0,
     guarantee5,
-    obtained5: 0
+    obtained5: 0,
+    obtained5NonPU: 0,
+    obtained4: 0
   };
 
   const trials = Number(document.getElementById("input-trials").value);
 
-  const distribution = simulator.simulateDistribution(trials, initialState, totalPulls);
+  const result = simulator.simulateDistribution(trials, initialState, totalPulls);
 
-  renderResults(distribution);
+  renderResults(result, totalPulls);
 }
 
 /* ------------------------------------------------------------
    結果描画（排出内訳 → 最上段）
    ------------------------------------------------------------ */
-function renderResults(prob) {
+function renderResults(result, totalPulls) {
   const el = document.getElementById("results");
 
-  const avg5 = prob.reduce((a, b, i) => a + b * i, 0).toFixed(2);
+  const prob = result.distribution;
+  const avg5PU = prob.reduce((a, b, i) => a + b * i, 0).toFixed(2);
+
+  const avg5NonPU = result.avg5NonPU.toFixed(2);
+  const avg4 = result.avg4.toFixed(2);
 
   let html = `
     <div class="card">
       <h2>排出内訳（平均）</h2>
-      <div>★5総数：${avg5}体</div>
-      <div>★5PU外：計算対象外（必要なら追加可能）</div>
-      <div>★4総数：計算対象外（必要なら追加可能）</div>
+
+      <div class="result-main-number">今回のガチャ使用数：${totalPulls}連</div>
+
+      <div>★5総数（PUのみ）：${avg5PU}体</div>
+      <div>★5PU外：${avg5NonPU}体</div>
+      <div>★4総数：${avg4}体</div>
     </div>
 
     <div class="card">
