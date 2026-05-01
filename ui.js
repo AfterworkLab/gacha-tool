@@ -206,7 +206,7 @@ function renderFutureResourceSection() {
       </div>
 
       <!-- ピックアップ日・デイリー・月パス -->
-      <h3>ピックアップ日・デイリー達成率：${labels.pass}</h3>
+      <h3>ピックアップ日・デイリー達成率・${labels.pass}</h3>
 
       <div class="row-3col label-row">
         <div class="col">ピックアップ日</div>
