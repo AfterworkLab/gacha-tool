@@ -214,7 +214,7 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
-      <h3>ピックアップ日・デイリー・月パス</h3>
+      <h3>未来の石</h3>
       <div class="row-3col">
       
         <div class="col">
