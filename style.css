@@ -236,7 +236,44 @@ select {
   .run-button {
     font-size: 16px;
   }
+   
+/* ============================================================
+   ▼ ラベル消失対策・3等分レイアウト最適化（追加CSS）
+   ============================================================ */
 
+/* ラベルが flex に潰されないようにする */
+.col label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+/* 3等分レイアウト（PC） */
+.row-3col {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.row-3col .col {
+  flex: 1;
+}
+
+/* ラベル行（上段） */
+.label-row {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #444;
+}
+
+/* スマホ最適化：3等分を縦並びに */
+@media (max-width: 480px) {
+  .row-3col {
+    flex-direction: column;
+  }
+}
   .row-2col {
     flex-direction: column;
   }
