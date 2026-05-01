@@ -54,7 +54,7 @@ select {
   flex: 1;
 }
 
-/* 横並び 3カラム用（今回追加） */
+/* 横並び 3カラム用 */
 .row-3col {
   display: flex;
   gap: 12px;
@@ -141,25 +141,51 @@ select {
   width: 100%;
   padding: 14px 0;
   margin-top: 20px;
-  background: #DDE8FF;
-  border: 1px solid #AFC7FF;
-  border-radius: 8px;
+  background: #e7efff;
+  border: 1px solid #b9ccff;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.future-toggle:hover {
+  background: #d8e4ff;
+  border-color: #9fbaff;
 }
 
 .future-body {
   margin-top: 12px;
-  padding: 12px;
-  background: #FFF;
-  border: 1px solid #DDD;
-  border-radius: 8px;
+  padding: 18px 14px;
+  background: #ffffff;
+  border: 1px solid #d0d7e6;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.future-body h3 {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #333;
 }
 
 .hidden {
   display: none;
+}
+
+/* future-body 内のレイアウト調整 */
+.future-body .row-2col,
+.future-body .row-3col {
+  margin-bottom: 14px;
+}
+
+.future-body input,
+.future-body select {
+  margin-bottom: 10px;
 }
 
 /* ------------------------------
