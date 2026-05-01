@@ -1,94 +1,213 @@
 /* ============================================================
-   gacha.js — ガチャロジック
+   gacha.js  —  ガチャ1回ロジック + 凸数到達モード（仕様B）
    Afterwork Lab / 2026
    ============================================================ */
 
+
+/* ------------------------------------------------------------
+   ★ ガチャ1回の結果オブジェクト
+   ------------------------------------------------------------ */
+class GachaResult {
+  constructor(rarity, isPU, newState) {
+    this.rarity = rarity;   // 3 / 4 / 5
+    this.isPU = isPU;       // PUかどうか
+    this.newState = newState;
+  }
+}
+
+
+/* ------------------------------------------------------------
+   ★ ガチャエンジン（1回ガチャを回す）
+   ------------------------------------------------------------ */
 class GachaEngine {
   constructor(config) {
     this.config = config;
   }
 
-  roll(state) {
-    const c = this.config;
+  rollOnce(state) {
+    const cfg = this.config;
+
+    // 安全のため、存在しない場合は 0 で初期化
+    const obtained5 = state.obtained5 || 0;
+    const obtained5NonPU = state.obtained5NonPU || 0;
+    const obtained4 = state.obtained4 || 0;
 
     /* ------------------------------
-       ★5 抽選
+       ★5確率の計算
        ------------------------------ */
-    let p5 = c.base5;
-    if (state.pity5 >= c.soft5Start) {
-      p5 += (state.pity5 - c.soft5Start + 1) * c.soft5Curve;
-    }
-    if (state.pity5 + 1 >= c.hard5) {
-      p5 = 1;
+    let rate5 = cfg.rates.base5;
+
+    if (state.pity5 + 1 === cfg.pity.hard5) {
+      // ハードピティ：次の1回は必ず★5
+      rate5 = 1.0;
+    } else if (state.pity5 >= cfg.pity.soft5Start) {
+      // ソフトピティ：一定回数以降は確率上昇
+      const extra =
+        (state.pity5 - cfg.pity.soft5Start + 1) *
+        cfg.softPityCurve.increasePerPull5;
+      rate5 = Math.min(1.0, cfg.rates.base5 + extra);
     }
 
     /* ------------------------------
-       ★4 抽選
+       ★4確率の計算
        ------------------------------ */
-    let p4 = c.base4;
-    if (state.pity4 >= c.soft4Start) {
-      p4 += (state.pity4 - c.soft4Start + 1) * c.soft4Curve;
-    }
-    if (state.pity4 + 1 >= c.hard4) {
-      p4 = 1;
+    let rate4 = cfg.rates.base4;
+
+    if (state.pity4 + 1 === cfg.pity.hard4) {
+      rate4 = 1.0;
     }
 
-    const r = Math.random();
+    /* ------------------------------
+       レアリティ抽選
+       ------------------------------ */
+    const roll = Math.random();
+    let rarity = 3;
 
-    /* ★5 当選 */
-    if (r < p5) {
-      const isRateUp = state.guarantee5 || Math.random() < c.guarantee5RateUp;
-      state.obtained5 += isRateUp ? 1 : 0;
-      state.obtained5NonPU += isRateUp ? 0 : 1;
-
-      state.pity5 = 0;
-      state.pity4 += 1;
-      state.guarantee5 = !isRateUp;
-      return;
+    if (roll < rate5) {
+      rarity = 5;
+    } else if (roll < rate5 + rate4) {
+      rarity = 4;
     }
 
-    /* ★4 当選 */
-    if (r < p5 + p4) {
-      state.obtained4 += 1;
-      state.pity4 = 0;
-      state.pity5 += 1;
-      return;
+    /* ------------------------------
+       ★5が出た場合
+       ------------------------------ */
+    if (rarity === 5) {
+      let isPU = false;
+
+      if (state.guarantee5) {
+        // すり抜け後のPU確定
+        isPU = true;
+      } else {
+        // 50％勝負（など）
+        isPU = Math.random() < cfg.guarantee.fiveStar.pickupRate;
+      }
+
+      const newState = {
+        pity5: 0,
+        pity4: state.pity4 + 1,
+        // すり抜けたら次回PU確定、PUならフラグ解除
+        guarantee5: isPU ? false : true,
+        // PUを引いた分だけカウント
+        obtained5: obtained5 + (isPU ? 1 : 0),
+        // PU外★5（すり抜け）をカウント
+        obtained5NonPU: obtained5NonPU + (isPU ? 0 : 1),
+        // ★4は変化なし
+        obtained4: obtained4
+      };
+
+      return new GachaResult(5, isPU, newState);
     }
 
-    /* ★3 */
-    state.pity5 += 1;
-    state.pity4 += 1;
+    /* ------------------------------
+       ★4が出た場合
+       ------------------------------ */
+    if (rarity === 4) {
+      const isPU = Math.random() < (1 / cfg.featured.count4);
+
+      const newState = {
+        pity5: state.pity5 + 1,
+        pity4: 0,
+        guarantee5: state.guarantee5,
+        obtained5: obtained5,
+        obtained5NonPU: obtained5NonPU,
+        // ★4総数をカウント
+        obtained4: obtained4 + 1
+      };
+
+      return new GachaResult(4, isPU, newState);
+    }
+
+    /* ------------------------------
+       ★3が出た場合
+       ------------------------------ */
+    const newState = {
+      pity5: state.pity5 + 1,
+      pity4: state.pity4 + 1,
+      guarantee5: state.guarantee5,
+      obtained5: obtained5,
+      obtained5NonPU: obtained5NonPU,
+      obtained4: obtained4
+    };
+
+    return new GachaResult(3, false, newState);
   }
 }
 
+
+/* ------------------------------------------------------------
+   ★ 凸数到達モード（仕様B）
+   ------------------------------------------------------------ */
 class MonteCarloSimulator {
   constructor(engine) {
     this.engine = engine;
   }
 
-  simulateDistribution(trials, initialState, pulls) {
-    const dist = Array(8).fill(0);
-    let total5NonPU = 0;
+  // k凸に到達するまでの平均ガチャ回数
+  // ※ ただし「PUを引いてもガチャは止めず、maxPulls まで回し切る」
+  simulateForCopies(targetCopies, trials, initialState, maxPulls) {
+    let totalPulls = 0;
+    let successCount = 0;
+
+    for (let t = 0; t < trials; t++) {
+      let state = { ...initialState };
+      let pulls = 0;
+
+      while (pulls < maxPulls) {
+        const result = this.engine.rollOnce(state);
+        state = result.newState;
+        pulls++;
+      }
+
+      if (state.obtained5 >= targetCopies) {
+        totalPulls += pulls;
+        successCount++;
+      }
+    }
+
+    if (successCount === 0) return null;
+
+    return totalPulls / successCount;
+  }
+
+  // 0〜7凸の確率（ちょうど）＋ ★5PU外平均・★4総数平均
+  simulateDistribution(trials, initialState, maxPulls) {
+    const counts = Array(8).fill(0);
+    let totalNonPU5 = 0;
     let total4 = 0;
 
     for (let t = 0; t < trials; t++) {
-      const s = JSON.parse(JSON.stringify(initialState));
+      let state = {
+        pity5: initialState.pity5,
+        pity4: initialState.pity4 || 0,
+        guarantee5: initialState.guarantee5,
+        obtained5: initialState.obtained5 || 0,
+        obtained5NonPU: 0,
+        obtained4: 0
+      };
+      let pulls = 0;
 
-      for (let i = 0; i < pulls; i++) {
-        this.engine.roll(s);
+      while (pulls < maxPulls) {
+        const result = this.engine.rollOnce(state);
+        state = result.newState;
+        pulls++;
       }
 
-      const count = Math.min(s.obtained5, 7);
-      dist[count] += 1;
+      const k = Math.min(state.obtained5, 7);
+      counts[k]++;
 
-      total5NonPU += s.obtained5NonPU;
-      total4 += s.obtained4;
+      totalNonPU5 += state.obtained5NonPU || 0;
+      total4 += state.obtained4 || 0;
     }
 
+    const distribution = counts.map(c => c / trials);
+    const avg5NonPU = totalNonPU5 / trials;
+    const avg4 = total4 / trials;
+
     return {
-      distribution: dist.map(v => v / trials),
-      avg5NonPU: total5NonPU / trials,
-      avg4: total4 / trials
+      distribution,
+      avg5NonPU,
+      avg4
     };
   }
 }
