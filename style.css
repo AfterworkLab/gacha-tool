@@ -54,6 +54,17 @@ select {
   flex: 1;
 }
 
+/* 横並び 3カラム用（今回追加） */
+.row-3col {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.row-3col > .col {
+  flex: 1;
+}
+
 /* ------------------------------
    ゲーム選択ボタン
    ------------------------------ */
@@ -187,7 +198,6 @@ select {
   border-left-color: #4A90E2;
 }
 
-/* 結果内の強調ラベル */
 .result-main-number {
   font-size: 18px;
   font-weight: bold;
@@ -202,11 +212,6 @@ select {
   margin-top: 40px;
   padding: 20px 0;
   opacity: 0.85;
-}
-
-.footer-logo-link {
-  display: inline-block;
-  cursor: pointer;
 }
 
 .footer-logo img {
@@ -238,6 +243,10 @@ select {
   }
 
   .row-2col {
+    flex-direction: column;
+  }
+
+  .row-3col {
     flex-direction: column;
   }
 }
