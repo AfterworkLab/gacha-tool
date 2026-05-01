@@ -43,6 +43,17 @@ select {
   box-sizing: border-box;
 }
 
+/* 横並び 2カラム用 */
+.row-2col {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.row-2col > .col {
+  flex: 1;
+}
+
 /* ------------------------------
    ゲーム選択ボタン
    ------------------------------ */
@@ -60,14 +71,22 @@ select {
   border: 1px solid #AAA;
   background: #FFF;
   cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .game-btn:hover {
   background: #F0F0F0;
 }
 
+.game-btn.active {
+  background: #4A90E2;
+  color: #FFF;
+  border-color: #4A90E2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
+}
+
 /* ------------------------------
-   キャラ／武器タブ（A案）
+   キャラ／武器タブ
    ------------------------------ */
 .banner-tabs {
   display: flex;
@@ -84,16 +103,18 @@ select {
   background: #EEE;
   cursor: pointer;
   font-weight: bold;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .banner-tab.active {
   background: #4A90E2;
   color: white;
   border-color: #4A90E2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
 }
 
 /* ------------------------------
-   現在の状態（B案）
+   現在の状態
    ------------------------------ */
 .current-status {
   margin: 12px 0;
@@ -166,6 +187,13 @@ select {
   border-left-color: #4A90E2;
 }
 
+/* 結果内の強調ラベル */
+.result-main-number {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
 /* ------------------------------
    フッターロゴ
    ------------------------------ */
@@ -174,6 +202,11 @@ select {
   margin-top: 40px;
   padding: 20px 0;
   opacity: 0.85;
+}
+
+.footer-logo-link {
+  display: inline-block;
+  cursor: pointer;
 }
 
 .footer-logo img {
@@ -203,3 +236,8 @@ select {
   .run-button {
     font-size: 16px;
   }
+
+  .row-2col {
+    flex-direction: column;
+  }
+}
