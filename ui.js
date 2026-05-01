@@ -362,7 +362,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   結果描画
+   結果描画（入手済ロジックを実装）
    ------------------------------------------------------------ */
 function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
   const el = document.getElementById("results");
@@ -395,8 +395,25 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
   `;
 
   prob.forEach((p, i) => {
+    const percent = p * 100;
+
+    // 上位の入手数に確率があるか確認
+    const hasHigher = prob.slice(i + 1).some(v => v > 0);
+
+    let display;
+
+    if (percent === 100) {
+      display = "入手確定";
+
+    } else if (percent === 0 && hasHigher) {
+      display = "入手済";
+
+    } else {
+      display = percent.toFixed(2) + "%";
+    }
+
     const label = i === 7 ? "完凸（7体以上）" : `${i}体`;
-    html += `<div>${label}： ${(p * 100).toFixed(2)}%</div>`;
+    html += `<div>${label}： ${display}</div>`;
   });
 
   html += `</div>`;
