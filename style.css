@@ -114,16 +114,6 @@ select {
 }
 
 /* ------------------------------
-   現在の状態
-   ------------------------------ */
-.current-status {
-  margin: 12px 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-/* ------------------------------
    詳細設定（折りたたみ）
    ------------------------------ */
 .future-toggle {
@@ -187,7 +177,6 @@ select {
   border-left-color: #4A90E2;
 }
 
-/* 結果内の強調ラベル */
 .result-main-number {
   font-size: 18px;
   font-weight: bold;
@@ -204,39 +193,12 @@ select {
   opacity: 0.85;
 }
 
-.footer-logo-link {
-  display: inline-block;
-  cursor: pointer;
-}
-
 .footer-logo img {
   width: 160px;
   height: auto;
   margin-bottom: 8px;
 }
 
-.footer-logo .copyright {
-  font-size: 13px;
-  color: #555;
-}
-
-/* ------------------------------
-   スマホ最適化
-   ------------------------------ */
-@media (max-width: 480px) {
-  body {
-    padding: 0 12px;
-  }
-
-  .banner-tab {
-    font-size: 14px;
-    padding: 10px 0;
-  }
-
-  .run-button {
-    font-size: 16px;
-  }
-   
 /* ============================================================
    ▼ ラベル消失対策・3等分レイアウト最適化（追加CSS）
    ============================================================ */
@@ -273,7 +235,20 @@ select {
   .row-3col {
     flex-direction: column;
   }
-}
+
+  body {
+    padding: 0 12px;
+  }
+
+  .banner-tab {
+    font-size: 14px;
+    padding: 10px 0;
+  }
+
+  .run-button {
+    font-size: 16px;
+  }
+
   .row-2col {
     flex-direction: column;
   }
