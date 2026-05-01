@@ -127,7 +127,7 @@ function updateBannerTabs() {
 }
 
 /* ------------------------------------------------------------
-   ③ 所持リソース（横並び）
+   ③ 所持リソース
    ------------------------------------------------------------ */
 function renderResourceInputs() {
   const el = document.getElementById("resources");
@@ -150,7 +150,7 @@ function renderResourceInputs() {
 }
 
 /* ------------------------------------------------------------
-   ④ 現在のガチャ状況（横並び）
+   ④ 現在のガチャ状況
    ------------------------------------------------------------ */
 function renderCurrentStateInputs() {
   const el = document.getElementById("current-state");
@@ -176,7 +176,7 @@ function renderCurrentStateInputs() {
 }
 
 /* ------------------------------------------------------------
-   ⑤ 未来の石（ピックアップ日・デイリー・月パス追加）
+   ⑤ 未来の石（ピックアップ日・デイリー・月パス）
    ------------------------------------------------------------ */
 function renderFutureResourceSection() {
   const el = document.getElementById("future-resources");
@@ -327,4 +327,104 @@ function runSimulation() {
   const engine = new GachaEngine(config);
   const simulator = new MonteCarloSimulator(engine);
 
-  const pity5 = Number(document.getElementById("input-pity5").value
+  const pity5 = Number(document.getElementById("input-pity5").value) || 0;
+  const guarantee5 = document.getElementById("input-guarantee5").value === "true";
+
+  const stones = Number(document.getElementById("input-stones").value) || 0;
+  const tickets = Number(document.getElementById("input-tickets").value) || 0;
+
+  const paid = Number(document.getElementById("input-paid").value) || 0;
+  const eventMain = Number(document.getElementById("input-event-main").value) || 0;
+  const eventExtra = Number(document.getElementById("input-event-extra").value) || 0;
+
+  /* ------------------------------
+     ピックアップ日
+     ------------------------------ */
+  const pickupStr = document.getElementById("input-pickup-date").value;
+  let diffDays = 0;
+
+  if (pickupStr) {
+    const today = new Date();
+    const pickup = new Date(pickupStr);
+    diffDays = Math.max(0, Math.floor((pickup - today) / 86400000));
+  }
+
+  /* ------------------------------
+     デイリー石
+     ------------------------------ */
+  const dailyRate = Number(document.getElementById("input-daily-rate").value);
+  const dailyStones = diffDays * 60 * dailyRate;
+
+  /* ------------------------------
+     月パス石
+     ------------------------------ */
+  const pass = document.getElementById("input-pass").value;
+  const passStones = pass === "active" ? diffDays * 90 : 0;
+
+  /* ------------------------------
+     合計石
+     ------------------------------ */
+  const totalStones =
+    stones + paid + eventMain + eventExtra +
+    dailyStones + passStones;
+
+  const totalPulls = Math.floor(totalStones / 160) + tickets;
+
+  const initialState = {
+    pity5,
+    pity4: 0,
+    guarantee5,
+    obtained5: 0,
+    obtained5NonPU: 0,
+    obtained4: 0
+  };
+
+  const trials = Number(document.getElementById("input-trials").value);
+
+  const result = simulator.simulateDistribution(trials, initialState, totalPulls);
+
+  renderResults(result, totalPulls, diffDays, dailyStones, passStones);
+}
+
+/* ------------------------------------------------------------
+   結果描画
+   ------------------------------------------------------------ */
+function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
+  const el = document.getElementById("results");
+
+  const prob = result.distribution;
+  const avg5PU = prob.reduce((a, b, i) => a + b * i, 0).toFixed(2);
+
+  const avg5NonPU = result.avg5NonPU.toFixed(2);
+  const avg4 = result.avg4.toFixed(2);
+
+  let html = `
+    <div class="card">
+      <h2>排出内訳（平均）</h2>
+
+      <div class="result-main-number">今回のガチャ使用数：${totalPulls}連</div>
+
+      <div>★5総数（PUのみ）：${avg5PU}体</div>
+      <div>★5PU外：${avg5NonPU}体</div>
+      <div>★4総数：${avg4}体</div>
+
+      <hr>
+
+      <div>未来日数：${diffDays}日</div>
+      <div>デイリー石：${dailyStones}個</div>
+      <div>月パス石：${passStones}個</div>
+    </div>
+
+    <div class="card">
+      <h2>★5ピックアップ入手確率</h2>
+  `;
+
+  prob.forEach((p, i) => {
+    const label = i === 7 ? "完凸（7体以上）" : `${i}体`;
+    html += `<div>${label}： ${(p * 100).toFixed(2)}%</div>`;
+  });
+
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
