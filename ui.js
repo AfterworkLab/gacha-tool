@@ -216,11 +216,14 @@ function renderFutureResourceSection() {
 
       <h3>ピックアップ日・デイリー・月パス</h3>
       <div class="row-3col">
+      
         <div class="col">
+          <label>ピックアップ日</label>
           <input id="input-pickup-date" type="date" min="${todayStr}">
         </div>
-
+      
         <div class="col">
+          <label>デイリー達成率</label>
           <select id="input-daily-rate">
             <option value="0">実施なし</option>
             <option value="0.4">週数回</option>
@@ -228,13 +231,15 @@ function renderFutureResourceSection() {
             <option value="1.0">毎日</option>
           </select>
         </div>
-
+      
         <div class="col">
+          <label id="label-pass"></label>
           <select id="input-pass">
             <option value="none">未購入</option>
             <option value="active">購入済</option>
           </select>
         </div>
+      
       </div>
 
     </div>
