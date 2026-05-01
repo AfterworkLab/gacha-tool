@@ -27,6 +27,11 @@ class GachaEngine {
   rollOnce(state) {
     const cfg = this.config;
 
+    // 安全のため、存在しない場合は 0 で初期化
+    const obtained5 = state.obtained5 || 0;
+    const obtained5NonPU = state.obtained5NonPU || 0;
+    const obtained4 = state.obtained4 || 0;
+
     /* ------------------------------
        ★5確率の計算
        ------------------------------ */
@@ -84,7 +89,11 @@ class GachaEngine {
         // すり抜けたら次回PU確定、PUならフラグ解除
         guarantee5: isPU ? false : true,
         // PUを引いた分だけカウント
-        obtained5: state.obtained5 + (isPU ? 1 : 0)
+        obtained5: obtained5 + (isPU ? 1 : 0),
+        // PU外★5（すり抜け）をカウント
+        obtained5NonPU: obtained5NonPU + (isPU ? 0 : 1),
+        // ★4は変化なし
+        obtained4: obtained4
       };
 
       return new GachaResult(5, isPU, newState);
@@ -100,7 +109,10 @@ class GachaEngine {
         pity5: state.pity5 + 1,
         pity4: 0,
         guarantee5: state.guarantee5,
-        obtained5: state.obtained5
+        obtained5: obtained5,
+        obtained5NonPU: obtained5NonPU,
+        // ★4総数をカウント
+        obtained4: obtained4 + 1
       };
 
       return new GachaResult(4, isPU, newState);
@@ -113,7 +125,9 @@ class GachaEngine {
       pity5: state.pity5 + 1,
       pity4: state.pity4 + 1,
       guarantee5: state.guarantee5,
-      obtained5: state.obtained5
+      obtained5: obtained5,
+      obtained5NonPU: obtained5NonPU,
+      obtained4: obtained4
     };
 
     return new GachaResult(3, false, newState);
@@ -139,9 +153,6 @@ class MonteCarloSimulator {
       let state = { ...initialState };
       let pulls = 0;
 
-      // ★ 修正ポイント：
-      //   「PUを引いたら止める」のではなく、
-      //   maxPulls まで必ず回し切る
       while (pulls < maxPulls) {
         const result = this.engine.rollOnce(state);
         state = result.newState;
@@ -159,12 +170,21 @@ class MonteCarloSimulator {
     return totalPulls / successCount;
   }
 
-  // 0〜7凸の確率（ちょうど）
+  // 0〜7凸の確率（ちょうど）＋ ★5PU外平均・★4総数平均
   simulateDistribution(trials, initialState, maxPulls) {
     const counts = Array(8).fill(0);
+    let totalNonPU5 = 0;
+    let total4 = 0;
 
     for (let t = 0; t < trials; t++) {
-      let state = { ...initialState };
+      let state = {
+        pity5: initialState.pity5,
+        pity4: initialState.pity4 || 0,
+        guarantee5: initialState.guarantee5,
+        obtained5: initialState.obtained5 || 0,
+        obtained5NonPU: 0,
+        obtained4: 0
+      };
       let pulls = 0;
 
       while (pulls < maxPulls) {
@@ -175,8 +195,19 @@ class MonteCarloSimulator {
 
       const k = Math.min(state.obtained5, 7);
       counts[k]++;
+
+      totalNonPU5 += state.obtained5NonPU || 0;
+      total4 += state.obtained4 || 0;
     }
 
-    return counts.map(c => c / trials);
+    const distribution = counts.map(c => c / trials);
+    const avg5NonPU = totalNonPU5 / trials;
+    const avg4 = total4 / trials;
+
+    return {
+      distribution,
+      avg5NonPU,
+      avg4
+    };
   }
 }
