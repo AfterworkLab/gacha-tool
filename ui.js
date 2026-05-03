@@ -396,19 +396,19 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
 
   prob.forEach((p, i) => {
     const percent = p * 100;
+
+    // 上位の入手数に確率があるか確認
+    const hasHigher = prob.slice(i + 1).some(v => v > 0);
+
     let display;
 
     if (percent === 100) {
-      // 0〜6体の100%は「入手済」
-      // 7体以上（完凸）の100%は「入手確定」
-      display = (i < 7) ? "入手済" : "入手確定";
+      display = "入手確定";
 
-    } else if (percent === 0) {
-      // 0体だけは「入手済」
-      display = (i === 0) ? "入手済" : "0.00%";
+    } else if (percent === 0 && hasHigher) {
+      display = "入手済";
 
     } else {
-      // 通常の確率表示
       display = percent.toFixed(2) + "%";
     }
 
@@ -420,4 +420,3 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
 
   el.innerHTML = html;
 }
-
