@@ -21,7 +21,7 @@ const GAME_CONFIGS = {
     pity: {
       hard5: 90,
       hard4: 10,
-      soft5Start: 75,
+      soft5Start: 74,
       soft4Start: 0
     },
 
@@ -54,7 +54,7 @@ const GAME_CONFIGS = {
     pity: {
       hard5: 80,
       hard4: 10,
-      soft5Start: 62,
+      soft5Start: 66,
       soft4Start: 0
     },
 
