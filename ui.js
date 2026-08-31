@@ -518,7 +518,6 @@ const logoPlugin = {
     ctx.restore();
   }
 };
-
 /* ★ グラフ描画 */
 function drawChart(progress, totalPulls) {
 
@@ -592,6 +591,7 @@ function drawChart(progress, totalPulls) {
       },
       plugins: {
         legend: { display: true }   // ← ★ 凡例が復活する
+        // ★ afterDraw は削除（v4では凡例を壊す）
       }
     }
   });
