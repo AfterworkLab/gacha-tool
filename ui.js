@@ -2,7 +2,7 @@
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
    未来石計算：ピックアップ日・デイリー達成率・月パス対応
    課金額計算：ゲーム別レート（スタレ基準＋将来拡張）
-   グラフ描画：非同期化で処理を軽量化
+   グラフ描画：非同期化＋インスタンス破棄＋高さ固定対応
    Afterwork Lab / 2026
    ============================================================ */
 
@@ -502,19 +502,33 @@ function renderResults(
 
   el.innerHTML = html;
 
+  el.innerHTML = html;
+
   /* ------------------------------------------------------------
-     ★追加：グラフ描画を非同期化
+     ★追加：グラフ描画を非同期化（暴走防止）
      ------------------------------------------------------------ */
-  setTimeout(() => drawChart(prob), 50);
+  setTimeout(() => {
+    drawChart(prob);
+  }, 50);
 }
 
 /* ------------------------------------------------------------
-   ★追加：グラフ描画関数（非同期化用）
+   ★追加：グラフ描画関数（インスタンス破棄＋高さ固定）
    ------------------------------------------------------------ */
+let puChartInstance = null;
+
 function drawChart(prob) {
   if (!window.Chart) return;
 
-  const ctx = document.getElementById("puChart").getContext("2d");
+  const canvas = document.getElementById("puChart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  // 既存チャートがあれば破棄（重要）
+  if (puChartInstance) {
+    puChartInstance.destroy();
+  }
 
   const labels = [
     "0体",
@@ -529,7 +543,7 @@ function drawChart(prob) {
 
   const data = prob.map(p => p * 100);
 
-  new Chart(ctx, {
+  puChartInstance = new Chart(ctx, {
     type: "line",
     data: {
       labels,
@@ -546,7 +560,7 @@ function drawChart(prob) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: false,  // 高さ固定と併用
       scales: {
         y: {
           min: 0,
