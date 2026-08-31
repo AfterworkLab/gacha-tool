@@ -1,9 +1,10 @@
 /* ============================================================
-   ui.js — ガチャシミュレーター UI
-   凸進捗グラフ対応（横軸：ガチャ回数、縦軸：凸段階確率）
-   1001連以上はグラフ非表示
-   デフォルメ（間引き）対応
-   グラフ暴走防止（destroy）
+   ui.js — ガチャシミュレーター UI（完全版）
+   ・凸進捗グラフ（累積）
+   ・100連以上でも安定描画
+   ・0体の線は非表示
+   ・step間引きで高速化
+   ・凡例は新仕様
    ============================================================ */
 
 let currentGame = "StarRail";
@@ -135,7 +136,7 @@ function updateBannerTabs() {
 }
 
 /* ------------------------------------------------------------
-   ③ 所持リソース（★追加：追加連数入力）
+   ③ 所持リソース
    ------------------------------------------------------------ */
 function renderResourceInputs() {
   const el = document.getElementById("resources");
@@ -155,22 +156,18 @@ function renderResourceInputs() {
       </div>
     </div>
 
-    <!-- ★追加：追加連数入力欄 -->
     <div class="row-2col">
       <div class="col">
-        <label>追加で回したい連数(課金分)</label>
+        <label>追加で回したい連数（課金分）</label>
         <input id="input-extra-pulls" type="number" value="0" min="0">
       </div>
-
-      <div class="col">
-        
-      </div>
+      <div class="col"></div>
     </div>
   `;
 }
 
 /* ------------------------------------------------------------
-   ④ 未来の石（詳細設定）
+   ④ 未来の石
    ------------------------------------------------------------ */
 function renderFutureResourceSection() {
   const el = document.getElementById("future-resources");
@@ -322,7 +319,7 @@ function updateBackgroundColor() {
 }
 
 /* ------------------------------------------------------------
-   ⑥ シミュレーション実行（simulateDistribution 版）
+   ⑥ シミュレーション実行（完全版）
    ------------------------------------------------------------ */
 function runSimulation() {
   const key = `${currentGame}_${currentBanner}`;
@@ -381,25 +378,19 @@ function runSimulation() {
   /* ★ simulateDistribution を使用 */
   const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
 
-  // ★ 処理速度改善：間引き（step）を導入
+  /* ★ progress を自前で生成（高速化） */
   let step = 1;
   if (totalPulls > 600) step = 10;
   else if (totalPulls > 300) step = 5;
   else if (totalPulls > 100) step = 2;
 
-  /* ★ progress を自前で生成（グラフ用） */
   const progress = [];
-
   for (let pulls = 1; pulls <= totalPulls; pulls += step) {
     const d = simulator.simulateDistribution(trials, initialState, pulls);
     progress.push({ pulls, distribution: d.distribution });
   }
 
-
-
-  /* ------------------------------------------------------------
-     ★課金額計算
-     ------------------------------------------------------------ */
+  /* ★課金額計算 */
   let extraCost = null;
   const priceCfg = PRICE_CONFIG[currentGame];
 
@@ -426,7 +417,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   ★ 最新版：結果描画（確率分布＋色付き凡例＋グラフ）
+   ★ 結果描画（完全版）
    ------------------------------------------------------------ */
 function renderResults(
   result,
@@ -472,10 +463,8 @@ function renderResults(
 
   html += `</div>`;
 
-  /* ★ 凡例（確率分布）を描画する領域 */
   html += `<div id="graph-legend"></div>`;
 
-  /* ★ グラフ領域 */
   html += `
     <div class="card">
       <h2>★5ピックアップ入手確率分布（${totalPulls}連）</h2>
@@ -485,20 +474,21 @@ function renderResults(
 
   el.innerHTML = html;
 
-  /* ★ グラフと凡例を描画 */
   setTimeout(() => {
     drawChart(result.progress, totalPulls);
     renderLegend(result.progress, totalPulls);
   }, 50);
 }
+
 /* ============================================================
-   ★ 凸進捗グラフ描画関数（新仕様）
+   ★ 凸進捗グラフ描画（累積・安定版）
    ============================================================ */
 
 let puChartInstance = null;
 
 function drawChart(progress, totalPulls) {
 
+  // 1001連以上はグラフ非表示（凡例のみ）
   if (totalPulls >= 1001) {
     const canvas = document.getElementById("puChart");
     if (canvas) canvas.style.display = "none";
@@ -512,48 +502,48 @@ function drawChart(progress, totalPulls) {
 
   const ctx = canvas.getContext("2d");
 
+  // 既存チャート破棄（暴走防止）
   if (puChartInstance) {
     puChartInstance.destroy();
   }
 
-  let step = 1;
-  if (totalPulls > 600) step = 10;
-  else if (totalPulls > 300) step = 5;
-  else if (totalPulls > 100) step = 2;
-
+  // progress は runSimulation 側で間引き済みなのでそのまま使う
   const filtered = progress;
 
   const colors = [
-    "#999999",
-    "#4A90E2",
-    "#50E3C2",
-    "#F8E71C",
-    "#F5A623",
-    "#D0021B",
-    "#9013FE",
-    "#000000"
+    "#999999", // 0体（累積では常に100%なので非表示）
+    "#4A90E2", // 1体以上
+    "#50E3C2", // 2体以上
+    "#F8E71C", // 3体以上
+    "#F5A623", // 4体以上
+    "#D0021B", // 5体以上
+    "#9013FE", // 6体以上
+    "#000000"  // 完凸（7体）
   ];
 
   const labels = filtered.map(p => p.pulls);
   let datasets = [];
 
-  for (let pu = 0; pu <= 7; pu++) {
-    // ★ 累積確率に変更（pu体以上）
+  // ★ 0体ラインは累積では常に100%なので描画しない
+  for (let pu = 1; pu <= 7; pu++) {
+
+    // ★ 累積確率（pu体以上）
     const values = filtered.map(p => {
-    let sum = 0;
-    for (let i = pu; i <= 7; i++) {
-      sum += p.distribution[i];
-    }
-    return sum * 100;
-  });
+      let sum = 0;
+      for (let i = pu; i <= 7; i++) {
+        sum += p.distribution[i];
+      }
+      return sum * 100;
+    });
 
     const maxVal = Math.max(...values);
     const minVal = Math.min(...values);
 
+    // 全区間 0％ or 100％ の線は描画しない
     if (maxVal === 0 || minVal === 100) continue;
 
     datasets.push({
-      label: pu === 7 ? "完凸" : `${pu}体`,
+      label: pu === 7 ? "完凸" : `${pu}体以上`,
       data: values,
       borderColor: colors[pu],
       backgroundColor: "transparent",
@@ -575,67 +565,9 @@ function drawChart(progress, totalPulls) {
           ticks: { callback: v => `${v}%` }
         }
       },
-      plugins: { legend: { display: false } }
+      plugins: {
+        legend: { display: false }
+      }
     }
   });
-}
-function renderLegend(progress, totalPulls) {
-  const legendEl = document.getElementById("graph-legend");
-  if (!legendEl) return;
-
-  const colors = [
-    "#999999", // 0体
-    "#4A90E2", // 1体
-    "#50E3C2", // 2体
-    "#F8E71C", // 3体
-    "#F5A623", // 4体
-    "#D0021B", // 5体
-    "#9013FE", // 6体
-    "#000000"  // 完凸
-  ];
-
-  const last = progress[progress.length - 1].distribution;
-
-  // 1001連以上は完凸のみ
-  if (totalPulls >= 1001) {
-    const percent = (last[7] * 100).toFixed(2);
-    legendEl.innerHTML = `
-      <div class="card">
-        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
-        <p>完凸：${percent}%</p>
-      </div>
-    `;
-    return;
-  }
-
-  let html = `
-    <div class="card">
-      <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
-      <div class="legend-list">
-  `;
-
-  for (let pu = 0; pu <= 7; pu++) {
-    const percent = (last[pu] * 100).toFixed(2);
-    const label = pu === 7 ? "完凸" : `${pu}体`;
-    const color = colors[pu];
-
-    const display =
-      percent === "100.00" ? "入手済" :
-      percent === "0.00" ? "0％" :
-      `${percent}%`;
-
-    html += `
-      <div class="legend-item">
-        <span class="legend-color" style="background:${color};"></span>
-        <span class="legend-text">${label}：${display}</span>
-      </div>
-    `;
-  }
-
-  html += `
-      </div>
-    </div>
-  `;
-
-  legendEl.innerHTML = html;
 }
