@@ -383,12 +383,21 @@ function runSimulation() {
   /* ★ simulateDistribution を使用 */
   const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
 
+  // ★ 処理速度改善：間引き（step）を導入
+  let step = 1;
+  if (totalPulls > 600) step = 10;
+  else if (totalPulls > 300) step = 5;
+  else if (totalPulls > 100) step = 2;
+
   /* ★ progress を自前で生成（グラフ用） */
   const progress = [];
-  for (let pulls = 1; pulls <= totalPulls; pulls++) {
+
+  for (let pulls = 1; pulls <= totalPulls; pulls += step) {
     const d = simulator.simulateDistribution(trials, initialState, pulls);
     progress.push({ pulls, distribution: d.distribution });
   }
+
+
 
   /* ------------------------------------------------------------
      ★課金額計算
@@ -531,7 +540,15 @@ function drawChart(progress, totalPulls) {
   let datasets = [];
 
   for (let pu = 0; pu <= 7; pu++) {
-    const values = filtered.map(p => p.distribution[pu] * 100);
+    // ★ 累積確率に変更（pu体以上）
+    const values = filtered.map(p => {
+    let sum = 0;
+    for (let i = pu; i <= 7; i++) {
+      sum += p.distribution[i];
+    }
+    return sum * 100;
+  });
+
     const maxVal = Math.max(...values);
     const minVal = Math.min(...values);
 
