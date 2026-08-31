@@ -1,3 +1,10 @@
+/*
+© 2026 AfterworkLab
+This software is released under the MIT License.
+https://opensource.org/licenses/MIT
+*/
+
+
 /* ============================================================
    gacha.js  —  ガチャ1回ロジック + 凸数到達モード（仕様B）
    Afterwork Lab / 2026
