@@ -405,7 +405,6 @@ function runSimulation() {
     extraCost
   );
 }
-
 /* ------------------------------------------------------------
    結果描画（★課金額表示＋凸進捗グラフ）
    ------------------------------------------------------------ */
@@ -482,7 +481,6 @@ function renderResults(
     renderLegend(result.progress, totalPulls);
   }, 50);
 }
-
 /* ============================================================
    ★ 凸進捗グラフ描画関数（新仕様）
    ============================================================ */
@@ -503,8 +501,7 @@ function drawChart(progress, totalPulls) {
 
   canvas.style.display = "block";
 
-  const ctx = canvas
-     const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
 
   // 既存チャート破棄（暴走防止）
   if (puChartInstance) {
@@ -587,4 +584,46 @@ function drawChart(progress, totalPulls) {
       }
     }
   });
+}
+
+/* ============================================================
+   ★ 凸進捗凡例（テキスト表示）
+   ============================================================ */
+
+function renderLegend(progress, totalPulls) {
+
+  const legendEl = document.getElementById("graph-legend");
+  if (!legendEl) return;
+
+  // 1001連以上は凡例も非表示 → 完凸確率のみ表示
+  if (totalPulls >= 1001) {
+    const last = progress[progress.length - 1].distribution[7] * 100;
+    legendEl.innerHTML = `
+      <div class="card">
+        <h3>完凸確率</h3>
+        <p>${last.toFixed(2)}%</p>
+      </div>
+    `;
+    return;
+  }
+
+  const last = progress[progress.length - 1].distribution;
+
+  let html = `<div class="card"><h3>凸進捗凡例</h3>`;
+
+  for (let pu = 0; pu <= 7; pu++) {
+    const percent = (last[pu] * 100).toFixed(2);
+
+    if (percent === "0.00") {
+      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：0％</div>`;
+    } else if (percent === "100.00") {
+      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：入手確定</div>`;
+    } else {
+      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：${percent}%</div>`;
+    }
+  }
+
+  html += `</div>`;
+
+  legendEl.innerHTML = html;
 }
