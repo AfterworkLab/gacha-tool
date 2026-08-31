@@ -485,7 +485,65 @@ function renderResults(
   }, 50);
 
 }
+function renderLegend(progress, totalPulls) {
+  const legendEl = document.getElementById("graph-legend");
+  if (!legendEl) return;
 
+  const colors = [
+    "#999999",
+    "#4A90E2",
+    "#50E3C2",
+    "#F8E71C",
+    "#F5A623",
+    "#D0021B",
+    "#9013FE",
+    "#000000"
+  ];
+
+  const last = progress[progress.length - 1].distribution;
+
+  if (totalPulls >= 1001) {
+    const percent = (last[7] * 100).toFixed(2);
+    legendEl.innerHTML = `
+      <div class="card">
+        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+        <p>完凸：${percent}%</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div class="card">
+      <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+      <div class="legend-list">
+  `;
+
+  for (let pu = 0; pu <= 7; pu++) {
+    const percent = (last[pu] * 100).toFixed(2);
+    const label = pu === 7 ? "完凸" : `${pu}体`;
+    const color = colors[pu];
+
+    const display =
+      percent === "100.00" ? "入手済" :
+      percent === "0.00" ? "0％" :
+      `${percent}%`;
+
+    html += `
+      <div class="legend-item">
+        <span class="legend-color" style="background:${color};"></span>
+        <span class="legend-text">${label}：${display}</span>
+      </div>
+    `;
+  }
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  legendEl.innerHTML = html;
+}
 /* ============================================================
    ★ 凸進捗グラフ描画（Chart.js v4 対応版）
    ============================================================ */
