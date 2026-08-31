@@ -470,6 +470,13 @@ function renderResults(
     </div>
   `;
 
+
+  html += `
+  <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
+    © AfterworkLab
+  </div>
+  `;
+   
   el.innerHTML = html;
 
   setTimeout(() => {
@@ -477,11 +484,6 @@ function renderResults(
     renderLegend(result.progress, totalPulls);
   }, 50);
 
-  html += `
-  <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
-    © AfterworkLab
-  </div>
-`;
 }
 
 /* ============================================================
