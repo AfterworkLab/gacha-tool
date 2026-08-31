@@ -587,8 +587,8 @@ function drawChart(progress, totalPulls) {
 
           const ctx = chart.ctx;
           const size = 40;
-          const x = chart.chartArea.right - size - 10;
-          const y = chart.chartArea.bottom - size - 10;
+          const x = chart.chartArea.left + 20;
+          const y = chart.chartArea.top + 20;
 
           ctx.save();
           ctx.globalAlpha = 0.8;
