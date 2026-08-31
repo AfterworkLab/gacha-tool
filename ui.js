@@ -1,4 +1,5 @@
 /* ============================================================
+   © AfterworkLab
    ui.js — ガチャシミュレーター UI（完全版）
    ・凸進捗グラフ（累積）
    ・100連以上でも安定描画
@@ -484,10 +485,16 @@ function renderResults(
     drawChart(result.progress, totalPulls);
     renderLegend(result.progress, totalPulls);
   }, 50);
+   html += `
+  <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
+    © AfterworkLab
+  </div>
+`;
+
 }
 
 /* ============================================================
-   ★ 凸進捗グラフ描画（累積・安定版）
+   ★ 凸進捗グラフ描画（累積・安定版・AfterworkLabロゴ入り）
    ============================================================ */
 
 let puChartInstance = null;
@@ -513,7 +520,6 @@ function drawChart(progress, totalPulls) {
     puChartInstance.destroy();
   }
 
-  // progress は runSimulation 側で間引き済みなのでそのまま使う
   const filtered = progress;
 
   const colors = [
@@ -533,7 +539,7 @@ function drawChart(progress, totalPulls) {
   // ★ 0体ラインは累積では常に100%なので描画しない
   for (let pu = 1; pu <= 7; pu++) {
 
-    // ★ 累積確率（pu体以上）
+    // ★ 累積確率分布（pu体以上）
     const values = filtered.map(p => {
       let sum = 0;
       for (let i = pu; i <= 7; i++) {
@@ -572,7 +578,26 @@ function drawChart(progress, totalPulls) {
         }
       },
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+
+        /* --------------------------------------------------------
+           ★ AfterworkLab ロゴ描画プラグイン
+           -------------------------------------------------------- */
+        afterDraw: chart => {
+          const ctx = chart.ctx;
+          const img = new Image();
+          img.src = "logo.png"; // ← あなたのロゴファイル
+
+          const size = 40; // ロゴの大きさ
+          const x = chart.chartArea.right - size - 10;
+          const y = chart.chartArea.bottom - size - 10;
+
+          img.onload = () => {
+            ctx.globalAlpha = 0.8; // 半透明
+            ctx.drawImage(img, x, y, size, size);
+            ctx.globalAlpha = 1.0;
+          };
+        }
       }
     }
   });
