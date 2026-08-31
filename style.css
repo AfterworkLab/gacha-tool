@@ -190,3 +190,30 @@ select {
     max-height: 220px;
   }
 }
+/* ------------------------------------------------------------
+   ★ 凡例（色付き表示）
+   ------------------------------------------------------------ */
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid #ccc;
+}
+
+.legend-text {
+  font-size: 14px;
+}
