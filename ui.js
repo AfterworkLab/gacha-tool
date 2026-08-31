@@ -499,9 +499,12 @@ function renderResults(
 
 let puChartInstance = null;
 
+// ★ ロゴ画像を事前に読み込む（これが重要）
+const awLogo = new Image();
+awLogo.src = "logo.png";
+
 function drawChart(progress, totalPulls) {
 
-  // 1001連以上はグラフ非表示（凡例のみ）
   if (totalPulls >= 1001) {
     const canvas = document.getElementById("puChart");
     if (canvas) canvas.style.display = "none";
@@ -515,7 +518,6 @@ function drawChart(progress, totalPulls) {
 
   const ctx = canvas.getContext("2d");
 
-  // 既存チャート破棄（暴走防止）
   if (puChartInstance) {
     puChartInstance.destroy();
   }
@@ -523,35 +525,29 @@ function drawChart(progress, totalPulls) {
   const filtered = progress;
 
   const colors = [
-    "#999999", // 0体（累積では常に100%なので非表示）
-    "#4A90E2", // 1体以上
-    "#50E3C2", // 2体以上
-    "#F8E71C", // 3体以上
-    "#F5A623", // 4体以上
-    "#D0021B", // 5体以上
-    "#9013FE", // 6体以上
-    "#000000"  // 完凸（7体）
+    "#999999",
+    "#4A90E2",
+    "#50E3C2",
+    "#F8E71C",
+    "#F5A623",
+    "#D0021B",
+    "#9013FE",
+    "#000000"
   ];
 
   const labels = filtered.map(p => p.pulls);
   let datasets = [];
 
-  // ★ 0体ラインは累積では常に100%なので描画しない
   for (let pu = 1; pu <= 7; pu++) {
-
-    // ★ 累積確率分布（pu体以上）
     const values = filtered.map(p => {
       let sum = 0;
-      for (let i = pu; i <= 7; i++) {
-        sum += p.distribution[i];
-      }
+      for (let i = pu; i <= 7; i++) sum += p.distribution[i];
       return sum * 100;
     });
 
     const maxVal = Math.max(...values);
     const minVal = Math.min(...values);
 
-    // 全区間 0％ or 100％ の線は描画しない
     if (maxVal === 0 || minVal === 100) continue;
 
     datasets.push({
@@ -580,28 +576,23 @@ function drawChart(progress, totalPulls) {
       plugins: {
         legend: { display: false },
 
-        /* --------------------------------------------------------
-           ★ AfterworkLab ロゴ描画プラグイン
-           -------------------------------------------------------- */
+        // ★ ロゴ描画（安定版）
         afterDraw: chart => {
-          const ctx = chart.ctx;
-          const img = new Image();
-          img.src = "logo.png"; 
+          if (!awLogo.complete) return; // ← 画像読み込み前なら描画しない
 
+          const ctx = chart.ctx;
           const size = 40;
           const x = chart.chartArea.right - size - 10;
           const y = chart.chartArea.bottom - size - 10;
 
-          img.onload = () => {
-            ctx.globalAlpha = 0.8; // 半透明
-            ctx.drawImage(img, x, y, size, size);
-            ctx.globalAlpha = 1.0;
-          };
+          ctx.save();
+          ctx.globalAlpha = 0.8;
+          ctx.drawImage(awLogo, x, y, size, size);
+          ctx.restore();
         }
       }
     }
   });
-
 }
 /* ============================================================
    ★ 凡例描画（累積版・完全版）
