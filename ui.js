@@ -533,7 +533,7 @@ function drawChart(progress, totalPulls) {
   // ★ 0体ラインは累積では常に100%なので描画しない
   for (let pu = 1; pu <= 7; pu++) {
 
-    // ★ 累積確率分布（pu体以上）
+    // ★ 累積確率（pu体以上）
     const values = filtered.map(p => {
       let sum = 0;
       for (let i = pu; i <= 7; i++) {
@@ -606,7 +606,7 @@ function renderLegend(progress, totalPulls) {
 
     legendEl.innerHTML = `
       <div class="card">
-        <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
+        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
         <p>完凸：${percent}%</p>
       </div>
     `;
@@ -615,7 +615,7 @@ function renderLegend(progress, totalPulls) {
 
   let html = `
     <div class="card">
-      <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
+      <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
       <div class="legend-list">
   `;
 
