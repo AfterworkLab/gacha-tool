@@ -1,9 +1,8 @@
 /* ============================================================
-   ui.js — ガチャシミュレーター UI
-   凸進捗グラフ対応（横軸：ガチャ回数、縦軸：凸段階確率）
-   1001連以上はグラフ非表示
-   デフォルメ（間引き）対応
-   グラフ暴走防止（destroy）
+   ui.js — ガチャシミュレーター UI（修正版）
+   ★5ピックアップ入手確率分布（◯◯連）対応
+   凸進捗グラフ：0体の線は非表示
+   凡例：元の確率分布（ちょうど k体）
    ============================================================ */
 
 let currentGame = "StarRail";
@@ -135,7 +134,7 @@ function updateBannerTabs() {
 }
 
 /* ------------------------------------------------------------
-   ③ 所持リソース（★追加：追加連数入力）
+   ③ 所持リソース（★追加：課金分）
    ------------------------------------------------------------ */
 function renderResourceInputs() {
   const el = document.getElementById("resources");
@@ -155,22 +154,18 @@ function renderResourceInputs() {
       </div>
     </div>
 
-    <!-- ★追加：追加連数入力欄 -->
     <div class="row-2col">
       <div class="col">
-        <label>追加で回したい連数</label>
+        <label>追加で回したい連数（課金分）</label>
         <input id="input-extra-pulls" type="number" value="0" min="0">
       </div>
 
       <div class="col">
-        <small>
-          ※課金額はゲーム別レート（12000円→6480石）を元に計算します。
-        </small>
+        <!-- 注意書きは削除 -->
       </div>
     </div>
   `;
 }
-
 /* ------------------------------------------------------------
    ④ 未来の石（詳細設定）
    ------------------------------------------------------------ */
@@ -417,74 +412,12 @@ function runSimulation() {
     extraCost
   );
 }
-
-/* ------------------------------------------------------------
-   結果描画（★課金額表示＋凸進捗グラフ）
-   ------------------------------------------------------------ */
-function renderResults(
-  result,
-  totalPulls,
-  diffDays,
-  dailyStones,
-  passStones,
-  extraPulls,
-  extraCost
-) {
-  const el = document.getElementById("results");
-
-  const finalDist = result.finalDistribution;
-  const avg5NonPU = result.avg5NonPU.toFixed(2);
-  const avg4 = result.avg4.toFixed(2);
-
-  let html = `
-    <div class="card">
-      <h2>排出内訳（平均）</h2>
-
-      <div class="result-main-number">今回のガチャ使用数：${totalPulls}連</div>
-
-      <div>★5PU外：${avg5NonPU}体</div>
-      <div>★4総数：${avg4}体</div>
-
-      <hr>
-
-      <div>未来日数：${diffDays}日</div>
-      <div>デイリー石：${dailyStones}個</div>
-      <div>月パス石：${passStones}個</div>
-  `;
-
-  if (extraPulls > 0) {
-    html += `<hr>`;
-    html += `<div>追加連数：${extraPulls}連</div>`;
-
-    if (extraCost !== null) {
-      html += `<div>追加課金額：${extraCost.toLocaleString()}円</div>`;
-      html += `<small>※ゲーム別の基準レート（12000円→6480石）を元に計算しています。</small>`;
-    } else {
-      html += `<div>追加課金額：レート未設定</div>`;
-    }
-  }
-
-  html += `</div>`;
-
-  html += `<div id="graph-legend"></div>`;
-
-  html += `
-    <div class="card">
-      <h2>凸進捗グラフ（ガチャ回数 → 凸段階確率）</h2>
-      <canvas id="puChart"></canvas>
-    </div>
-  `;
-
-  el.innerHTML = html;
-
-  setTimeout(() => {
-    drawChart(result.progress, totalPulls);
-    renderLegend(result.progress, totalPulls);
-  }, 50);
-}
-
 /* ============================================================
-   ★ 凸進捗グラフ描画関数（新仕様）
+   ★ 凸進捗グラフ描画関数（修正版）
+   ------------------------------------------------------------
+   ・0体の線は非表示
+   ・1体〜完凸までの「ちょうど k体」確率の推移を描画
+   ・凡例は元の確率分布（ちょうど k体）
    ============================================================ */
 
 let puChartInstance = null;
@@ -516,20 +449,21 @@ function drawChart(progress, totalPulls) {
   const filtered = progress.filter(p => p.pulls % step === 0 || p.pulls === 1);
 
   const colors = [
-    "#999999",
-    "#4A90E2",
-    "#50E3C2",
-    "#F8E71C",
-    "#F5A623",
-    "#D0021B",
-    "#9013FE",
-    "#000000"
+    "#999999", // 0体（凡例のみ）
+    "#4A90E2", // 1体
+    "#50E3C2", // 2体
+    "#F8E71C", // 3体
+    "#F5A623", // 4体
+    "#D0021B", // 5体
+    "#9013FE", // 6体
+    "#000000"  // 完凸
   ];
 
   const labels = filtered.map(p => p.pulls);
   let datasets = [];
 
-  for (let pu = 0; pu <= 7; pu++) {
+  /* ★ 0体の線は描画しない → pu = 1 から開始 */
+  for (let pu = 1; pu <= 7; pu++) {
     const values = filtered.map(p => p.distribution[pu] * 100);
     const maxVal = Math.max(...values);
     const minVal = Math.min(...values);
@@ -563,35 +497,67 @@ function drawChart(progress, totalPulls) {
     }
   });
 }
+
+/* ------------------------------------------------------------
+   ★ 凡例（元の確率分布：ちょうど k体）
+   ------------------------------------------------------------ */
 function renderLegend(progress, totalPulls) {
   const legendEl = document.getElementById("graph-legend");
   if (!legendEl) return;
 
+  const last = progress[progress.length - 1].distribution;
+
+  /* 1001連以上は完凸のみ */
   if (totalPulls >= 1001) {
-    const last = progress[progress.length - 1].distribution[7] * 100;
+    const percent = (last[7] * 100).toFixed(2);
     legendEl.innerHTML = `
       <div class="card">
-        <h3>完凸確率</h3>
-        <p>${last.toFixed(2)}%</p>
+        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+        <p>完凸：${percent}%</p>
       </div>
     `;
     return;
   }
 
-  const last = progress[progress.length - 1].distribution;
-  let html = `<div class="card"><h3>凸進捗凡例</h3>`;
+  const colors = [
+    "#999999", // 0体
+    "#4A90E2",
+    "#50E3C2",
+    "#F8E71C",
+    "#F5A623",
+    "#D0021B",
+    "#9013FE",
+    "#000000"
+  ];
+
+  let html = `
+    <div class="card">
+      <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+      <div class="legend-list">
+  `;
 
   for (let pu = 0; pu <= 7; pu++) {
     const percent = (last[pu] * 100).toFixed(2);
-    if (percent === "0.00") {
-      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：0％</div>`;
-    } else if (percent === "100.00") {
-      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：入手確定</div>`;
-    } else {
-      html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：${percent}%</div>`;
-    }
+    const label = pu === 7 ? "完凸" : `${pu}体`;
+    const color = colors[pu];
+
+    const display =
+      percent === "100.00" ? "入手済" :
+      percent === "0.00" ? "0％" :
+      `${percent}%`;
+
+    html += `
+      <div class="legend-item">
+        <span class="legend-color" style="background:${color};"></span>
+        <span class="legend-text">${label}：${display}</span>
+      </div>
+    `;
   }
 
-  html += `</div>`;
+  html += `
+      </div>
+    </div>
+  `;
+
   legendEl.innerHTML = html;
 }
