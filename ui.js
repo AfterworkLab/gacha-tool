@@ -506,6 +506,19 @@ const logoPlugin = {
     if (!awLogo.complete) return;
 
     const ctx = chart.ctx;
+    const size = 40;
+
+    const canvas = chart.canvas;
+    const x = canvas.width - size - 10;
+    const y = canvas.height - size - 10;
+
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(awLogo, x, y, size, size);
+    ctx.restore();
+  }
+};
+
 /* ============================================================
    ★ 凸進捗グラフ描画（Chart.js v4 対応版）
    ============================================================ */
