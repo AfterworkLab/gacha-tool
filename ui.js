@@ -1,11 +1,32 @@
 /* ============================================================
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
    未来石計算：ピックアップ日・デイリー達成率・月パス対応
+   課金額計算：ゲーム別レート（スタレ基準＋将来拡張）
    Afterwork Lab / 2026
    ============================================================ */
 
 let currentGame = "StarRail";
 let currentBanner = "character";
+
+/* ------------------------------------------------------------
+   課金レート設定（将来拡張用）
+   - yen: 基準課金額（日本円）
+   - stones: その課金額で手に入る石数
+   ------------------------------------------------------------ */
+const PRICE_CONFIG = {
+  StarRail: {
+    yen: 12000,
+    stones: 6480   // 往日の夢華 6480（初回特典なし）
+  },
+  Genshin: {
+    yen: 0,        // 将来設定用（例：12000）
+    stones: 0      // 将来設定用（例：創世結晶の石数）
+  },
+  Zenless: {
+    yen: 0,        // 将来設定用
+    stones: 0      // 将来設定用（モノクローム）
+  }
+};
 
 /* ------------------------------------------------------------
    ゲーム別ラベル
@@ -125,7 +146,7 @@ function updateBannerTabs() {
 }
 
 /* ------------------------------------------------------------
-   ③ 所持リソース
+   ③ 所持リソース ＋ 追加連数入力
    ------------------------------------------------------------ */
 function renderResourceInputs() {
   const el = document.getElementById("resources");
@@ -142,6 +163,19 @@ function renderResourceInputs() {
       <div class="col">
         <label id="label-tickets"></label>
         <input id="input-tickets" type="number" value="0">
+      </div>
+    </div>
+
+    <div class="row-2col">
+      <div class="col">
+        <label>追加で回したい連数</label>
+        <input id="input-extra-pulls" type="number" value="0" min="0">
+      </div>
+      <div class="col">
+        <small>
+          計算は Google Play の 12,000円レート（スタレ）など、<br>
+          ゲーム別の基準値を元に行います。
+        </small>
       </div>
     </div>
   `;
@@ -166,7 +200,7 @@ function renderFutureResourceSection() {
 
     <div id="future-body" class="future-body hidden">
 
-      <!-- ① 往日の夢華 -->
+      <!-- ① 往日の夢華／創世結晶／モノクローム -->
       <h3 id="label-paid"></h3>
       <input id="input-paid" type="number" value="0">
 
@@ -358,13 +392,41 @@ function runSimulation() {
 
   const result = simulator.simulateDistribution(trials, initialState, totalPulls);
 
-  renderResults(result, totalPulls, diffDays, dailyStones, passStones);
+  // 追加連数と課金額の計算
+  const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
+
+  let extraCost = null;
+  const priceCfg = PRICE_CONFIG[currentGame];
+
+  if (priceCfg && priceCfg.yen > 0 && priceCfg.stones > 0) {
+    const yenPerStone = priceCfg.yen / priceCfg.stones;
+    const yenPerPull = yenPerStone * 160;
+    extraCost = Math.round(yenPerPull * extraPulls);
+  }
+
+  renderResults(
+    result,
+    totalPulls,
+    diffDays,
+    dailyStones,
+    passStones,
+    extraPulls,
+    extraCost
+  );
 }
 
 /* ------------------------------------------------------------
-   結果描画（入手済ロジックを実装）
+   結果描画（入手済ロジック＋課金額＋グラフ）
    ------------------------------------------------------------ */
-function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
+function renderResults(
+  result,
+  totalPulls,
+  diffDays,
+  dailyStones,
+  passStones,
+  extraPulls,
+  extraCost
+) {
   const el = document.getElementById("results");
 
   const prob = result.distribution;
@@ -388,8 +450,23 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
       <div>未来日数：${diffDays}日</div>
       <div>デイリー石：${dailyStones}個</div>
       <div>月パス石：${passStones}個</div>
-    </div>
+  `;
 
+  if (extraPulls > 0) {
+    html += `<hr>`;
+    html += `<div>追加連数：${extraPulls}連</div>`;
+
+    if (extraCost !== null) {
+      html += `<div>追加課金額：${extraCost.toLocaleString()}円</div>`;
+      html += `<small>※ゲーム別の基準レート（スタレは Google Play 12,000円）を元に計算しています。</small>`;
+    } else {
+      html += `<div>追加課金額：レート未設定（原神・ゼンゼロの金額を設定してください）</div>`;
+    }
+  }
+
+  html += `</div>`;
+
+  html += `
     <div class="card">
       <h2>★5ピックアップ入手確率</h2>
   `;
@@ -397,17 +474,14 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
   prob.forEach((p, i) => {
     const percent = p * 100;
 
-    // 上位の入手数に確率があるか確認
     const hasHigher = prob.slice(i + 1).some(v => v > 0);
 
     let display;
 
     if (percent === 100) {
       display = "入手確定";
-
     } else if (percent === 0 && hasHigher) {
       display = "入手済";
-
     } else {
       display = percent.toFixed(2) + "%";
     }
@@ -418,5 +492,67 @@ function renderResults(result, totalPulls, diffDays, dailyStones, passStones) {
 
   html += `</div>`;
 
+  // グラフ表示用カード
+  html += `
+    <div class="card">
+      <h2>PU入手数の確率分布（0体〜完凸）</h2>
+      <p>0体〜完凸（7体以上）までの「PU入手数ごとの確率」を折れ線グラフで表示します。</p>
+      <canvas id="puChart"></canvas>
+    </div>
+  `;
+
   el.innerHTML = html;
+
+  // Chart.js でグラフ描画
+  if (window.Chart) {
+    const ctx = document.getElementById("puChart").getContext("2d");
+
+    const labels = [
+      "0体",
+      "1体",
+      "2体",
+      "3体",
+      "4体",
+      "5体",
+      "6体",
+      "完凸（7体以上）"
+    ];
+
+    const data = prob.map(p => (p * 100));
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "PU入手数ごとの確率（%）",
+            data,
+            borderColor: "#4A90E2",
+            backgroundColor: "rgba(74,144,226,0.2)",
+            tension: 0.2,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            ticks: {
+              callback: (value) => `${value}%`
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true
+          }
+        }
+      }
+    });
+  }
 }
