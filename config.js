@@ -1,3 +1,9 @@
+/*
+© 2026 AfterworkLab
+This software is released under the MIT License.
+https://opensource.org/licenses/MIT
+*/
+
 /* ============================================================
    config.js  —  完全版ガチャ仕様データ
    Afterwork Lab / 2026
