@@ -158,14 +158,12 @@ function renderResourceInputs() {
     <!-- ★追加：追加連数入力欄 -->
     <div class="row-2col">
       <div class="col">
-        <label>追加で回したい連数</label>
+        <label>追加で回したい連数(課金分)</label>
         <input id="input-extra-pulls" type="number" value="0" min="0">
       </div>
 
       <div class="col">
-        <small>
-          ※課金額はゲーム別レート（12000円→6480石）を元に計算します。
-        </small>
+        
       </div>
     </div>
   `;
@@ -612,7 +610,7 @@ function renderLegend(progress, totalPulls) {
 
   let html = `
     <div class="card">
-      <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+      <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
       <div class="legend-list">
   `;
 
