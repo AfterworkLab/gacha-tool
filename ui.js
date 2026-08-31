@@ -390,6 +390,12 @@ function runSimulation() {
     progress.push({ pulls, distribution: d.distribution });
   }
 
+  // ★ 最後が totalPulls で終わらない場合は必ず追加する
+  if (progress[progress.length - 1].pulls !== totalPulls) {
+    const d = simulator.simulateDistribution(trials, initialState, totalPulls);
+    progress.push({ pulls: totalPulls, distribution: d.distribution });
+  }
+
   /* ★課金額計算 */
   let extraCost = null;
   const priceCfg = PRICE_CONFIG[currentGame];
@@ -570,6 +576,7 @@ function drawChart(progress, totalPulls) {
       }
     }
   });
+
 }
 /* ============================================================
    ★ 凡例描画（累積版・完全版）
@@ -599,7 +606,7 @@ function renderLegend(progress, totalPulls) {
 
     legendEl.innerHTML = `
       <div class="card">
-        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+        <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
         <p>完凸：${percent}%</p>
       </div>
     `;
