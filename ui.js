@@ -586,9 +586,9 @@ function drawChart(progress, totalPulls) {
         afterDraw: chart => {
           const ctx = chart.ctx;
           const img = new Image();
-          img.src = "logo.png"; // ← あなたのロゴファイル
+          img.src = "logo.png"; 
 
-          const size = 40; // ロゴの大きさ
+          const size = 40;
           const x = chart.chartArea.right - size - 10;
           const y = chart.chartArea.bottom - size - 10;
 
