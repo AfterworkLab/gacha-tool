@@ -541,7 +541,7 @@ const logoPlugin = {
   }
 };
 
-/* ★ グラフ描画（v4対応） */
+/* ★ グラフ描画 */
 function drawChart(progress, totalPulls) {
 
   if (totalPulls >= 1001) {
@@ -613,11 +613,26 @@ function drawChart(progress, totalPulls) {
         }
       },
       plugins: {
-        legend: { display: false }
-      }
-    },
+        legend: { display: false },
 
-    // ★ Chart.js v4 ではここでプラグインを登録する
-    plugins: [logoPlugin]
+        // ★ ロゴ描画（修正後：canvas 座標を使う）
+        afterDraw: chart => {
+          if (!awLogo.complete) return;
+
+          const ctx = chart.ctx;
+          const size = 40;
+
+          // chartArea が無い環境でも必ず描画される
+          const canvas = chart.canvas;
+          const x = canvas.width - size - 10;
+          const y = canvas.height - size - 10;
+
+          ctx.save();
+          ctx.globalAlpha = 0.8;
+          ctx.drawImage(awLogo, x, y, size, size);
+          ctx.restore();
+        }
+      }
+    }
   });
 }
