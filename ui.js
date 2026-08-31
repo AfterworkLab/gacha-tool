@@ -1,3 +1,10 @@
+/*
+© 2026 AfterworkLab
+This software is released under the MIT License.
+https://opensource.org/licenses/MIT
+*/
+
+
 /* ============================================================
    © AfterworkLab
    ui.js — ガチャシミュレーター UI（完全版）
