@@ -485,19 +485,24 @@ function renderResults(
 }
 
 /* ============================================================
-   ★ Chart.js v4 ロゴ描画プラグイン（register 方式）
+   ★ 凸進捗グラフ描画（Chart.js v4 対応版）
    ============================================================ */
 
 let puChartInstance = null;
 
-// ロゴ画像読み込み
+// ★ ロゴ画像を事前に読み込む
 const awLogo = new Image();
 awLogo.src = "logo.png";
 
-// Chart.js v4 では register 方式が確実に動く
-Chart.register({
-  id: "awLogoPlugin",
-  afterDraw(chart) {
+// ★ ロゴ読み込み後にチャートを再描画する
+awLogo.onload = () => {
+  if (puChartInstance) puChartInstance.update();
+};
+
+/* ★ Chart.js v4 用ロゴ描画プラグイン */
+const logoPlugin = {
+  id: "logoPlugin",
+  afterDraw(chart, args, options) {
     if (!awLogo.complete) return;
 
     const ctx = chart.ctx;
@@ -512,7 +517,8 @@ Chart.register({
     ctx.drawImage(awLogo, x, y, size, size);
     ctx.restore();
   }
-});
+};
+
 /* ★ グラフ描画 */
 function drawChart(progress, totalPulls) {
 
@@ -585,8 +591,25 @@ function drawChart(progress, totalPulls) {
         }
       },
       plugins: {
-        legend: { display: false }
-        // ★ ロゴ描画は register 方式で動くのでここには書かない
+        legend: { display: false },
+
+        // ★ ロゴ描画（修正後：canvas 座標を使う）
+        afterDraw: chart => {
+          if (!awLogo.complete) return;
+
+          const ctx = chart.ctx;
+          const size = 40;
+
+          // chartArea が無い環境でも必ず描画される
+          const canvas = chart.canvas;
+          const x = canvas.width - size - 10;
+          const y = canvas.height - size - 10;
+
+          ctx.save();
+          ctx.globalAlpha = 0.8;
+          ctx.drawImage(awLogo, x, y, size, size);
+          ctx.restore();
+        }
       }
     }
   });
