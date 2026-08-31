@@ -494,7 +494,7 @@ function renderResults(
 }
 
 /* ============================================================
-   ★ 凸進捗グラフ描画（累積・安定版・AfterworkLabロゴ入り）
+   ★ 凸進捗グラフ描画（©AfterworkLab）
    ============================================================ */
 
 let puChartInstance = null;
@@ -578,7 +578,7 @@ function drawChart(progress, totalPulls) {
 
         // ★ ロゴ描画（安定版）
         afterDraw: chart => {
-          if (!awLogo.complete) return; // ← 画像読み込み前なら描画しない
+          if (!awLogo.complete) return; // ← 読み込み前なら描画しない
 
           const ctx = chart.ctx;
           const size = 40;
