@@ -503,7 +503,7 @@ let puChartInstance = null;
 const awLogo = new Image();
 awLogo.src = "logo.png";
 
-// ★ ロゴ読み込み後にチャートを再描画する（これが決定的に重要）
+// ★ ロゴ読み込み後にチャートを再描画する（必須）
 awLogo.onload = () => {
   if (puChartInstance) puChartInstance.update();
 };
