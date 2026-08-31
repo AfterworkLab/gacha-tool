@@ -1,9 +1,9 @@
 /* ============================================================
-   ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
-   未来石計算：ピックアップ日・デイリー達成率・月パス対応
-   課金額計算：ゲーム別レート（スタレ基準＋将来拡張）
-   グラフ描画：非同期化＋インスタンス破棄＋高さ固定対応
-   Afterwork Lab / 2026
+   ui.js — ガチャシミュレーター UI
+   凸進捗グラフ対応（横軸：ガチャ回数、縦軸：凸段階確率）
+   1001連以上はグラフ非表示
+   デフォルメ（間引き）対応
+   グラフ暴走防止（destroy）
    ============================================================ */
 
 let currentGame = "StarRail";
@@ -381,7 +381,7 @@ function runSimulation() {
 
   const trials = Number(document.getElementById("input-trials").value);
 
-  const result = simulator.simulateDistribution(trials, initialState, totalPulls);
+  const result = simulator.simulateProgress(trials, initialState, totalPulls);
 
   /* ------------------------------------------------------------
      ★課金額計算
@@ -407,7 +407,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   結果描画（★課金額表示＋非同期グラフ描画）
+   結果描画（★課金額表示＋凸進捗グラフ）
    ------------------------------------------------------------ */
 function renderResults(
   result,
@@ -420,9 +420,7 @@ function renderResults(
 ) {
   const el = document.getElementById("results");
 
-  const prob = result.distribution;
-  const avg5PU = prob.reduce((a, b, i) => a + b * i, 0).toFixed(2);
-
+  const finalDist = result.finalDistribution;
   const avg5NonPU = result.avg5NonPU.toFixed(2);
   const avg4 = result.avg4.toFixed(2);
 
@@ -432,7 +430,6 @@ function renderResults(
 
       <div class="result-main-number">今回のガチャ使用数：${totalPulls}連</div>
 
-      <div>★5総数（PUのみ）：${avg5PU}体</div>
       <div>★5PU外：${avg5NonPU}体</div>
       <div>★4総数：${avg4}体</div>
 
@@ -454,113 +451,128 @@ function renderResults(
       html += `<div>追加課金額：${extraCost.toLocaleString()}円</div>`;
       html += `<small>※ゲーム別の基準レート（12000円→6480石）を元に計算しています。</small>`;
     } else {
-      html += `<div>追加課金額：レート未設定（原神・ゼンゼロの金額を設定してください）</div>`;
+      html += `<div>追加課金額：レート未設定</div>`;
     }
   }
 
   html += `</div>`;
 
   /* ------------------------------------------------------------
-     ★PU入手確率
+     ★凸進捗凡例表示領域
      ------------------------------------------------------------ */
-  html += `
-    <div class="card">
-      <h2>★5ピックアップ入手確率</h2>
-  `;
-
-  prob.forEach((p, i) => {
-    const percent = p * 100;
-
-    const hasHigher = prob.slice(i + 1).some(v => v > 0);
-
-    let display;
-
-    if (percent === 100) {
-      display = "入手確定";
-    } else if (percent === 0 && hasHigher) {
-      display = "入手済";
-    } else {
-      display = percent.toFixed(2) + "%";
-    }
-
-    const label = i === 7 ? "完凸（7体以上）" : `${i}体`;
-    html += `<div>${label}： ${display}</div>`;
-  });
-
-  html += `</div>`;
+  html += `<div id="graph-legend"></div>`;
 
   /* ------------------------------------------------------------
-     ★PU入手数の確率分布グラフ
+     ★凸進捗グラフ領域
      ------------------------------------------------------------ */
   html += `
     <div class="card">
-      <h2>PU入手数の確率分布（0体〜完凸）</h2>
-      <p>PU入手数ごとの確率を折れ線グラフで表示します。</p>
+      <h2>凸進捗グラフ（ガチャ回数 → 凸段階確率）</h2>
       <canvas id="puChart"></canvas>
     </div>
   `;
 
   el.innerHTML = html;
 
-  el.innerHTML = html;
-
   /* ------------------------------------------------------------
-     ★追加：グラフ描画を非同期化（暴走防止）
+     ★グラフ描画（非同期）
      ------------------------------------------------------------ */
   setTimeout(() => {
-    drawChart(prob);
+    drawChart(result.progress, totalPulls);
+    renderLegend(result.progress, totalPulls);
   }, 50);
 }
 
-/* ------------------------------------------------------------
-   ★追加：グラフ描画関数（インスタンス破棄＋高さ固定）
-   ------------------------------------------------------------ */
+/* ============================================================
+   ★ 凸進捗グラフ描画関数（新仕様）
+   ============================================================ */
+
 let puChartInstance = null;
 
-function drawChart(prob) {
-  if (!window.Chart) return;
+function drawChart(progress, totalPulls) {
+
+  // 1001連以上はグラフ非表示
+  if (totalPulls >= 1001) {
+    const canvas = document.getElementById("puChart");
+    if (canvas) canvas.style.display = "none";
+    return;
+  }
 
   const canvas = document.getElementById("puChart");
   if (!canvas) return;
 
-  const ctx = canvas.getContext("2d");
+  canvas.style.display = "block";
 
-  // 既存チャートがあれば破棄（重要）
+  const ctx = canvas
+     const ctx = canvas.getContext("2d");
+
+  // 既存チャート破棄（暴走防止）
   if (puChartInstance) {
     puChartInstance.destroy();
   }
 
-  const labels = [
-    "0体",
-    "1体",
-    "2体",
-    "3体",
-    "4体",
-    "5体",
-    "6体",
-    "完凸（7体以上）"
+  /* ------------------------------------------------------------
+     ★ デフォルメ（間引き）処理
+     ------------------------------------------------------------ */
+  let step = 1;
+  if (totalPulls > 600) step = 10;
+  else if (totalPulls > 300) step = 5;
+  else if (totalPulls > 100) step = 2;
+
+  const filtered = progress.filter(p => p.pulls % step === 0 || p.pulls === 1);
+
+  /* ------------------------------------------------------------
+     ★ datasets（凸段階ごとに線を描画）
+     ------------------------------------------------------------ */
+
+  const colors = [
+    "#999999", // 0体（非表示）
+    "#4A90E2", // 1体
+    "#50E3C2", // 2体
+    "#F8E71C", // 3体
+    "#F5A623", // 4体
+    "#D0021B", // 5体
+    "#9013FE", // 6体
+    "#000000"  // 完凸（7体）
   ];
 
-  const data = prob.map(p => p * 100);
+  const labels = filtered.map(p => p.pulls);
 
+  let datasets = [];
+
+  for (let pu = 0; pu <= 7; pu++) {
+
+    // 0％と100％は非表示
+    const values = filtered.map(p => p.distribution[pu] * 100);
+    const maxVal = Math.max(...values);
+    const minVal = Math.min(...values);
+
+    if (maxVal === 0 || minVal === 100) {
+      continue; // 非表示
+    }
+
+    datasets.push({
+      label: `${pu === 7 ? "完凸" : `${pu}体`}`,
+      data: values,
+      borderColor: colors[pu],
+      backgroundColor: "transparent",
+      tension: 0.2,
+      pointRadius: 0
+    });
+  }
+
+  /* ------------------------------------------------------------
+     ★ Chart.js 描画
+     ------------------------------------------------------------ */
   puChartInstance = new Chart(ctx, {
     type: "line",
     data: {
       labels,
-      datasets: [
-        {
-          label: "PU入手数ごとの確率（%）",
-          data,
-          borderColor: "#4A90E2",
-          backgroundColor: "rgba(74,144,226,0.2)",
-          tension: 0.2,
-          pointRadius: 3
-        }
-      ]
+      datasets
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,  // 高さ固定と併用
+      maintainAspectRatio: false,
       scales: {
         y: {
           min: 0,
@@ -571,7 +583,7 @@ function drawChart(prob) {
         }
       },
       plugins: {
-        legend: { display: true }
+        legend: { display: false } // 凡例は別途テキストで表示
       }
     }
   });
