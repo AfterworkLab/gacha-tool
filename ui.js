@@ -527,7 +527,7 @@ function drawChart(progress, totalPulls) {
   // ★ 0体ラインは累積では常に100%なので描画しない
   for (let pu = 1; pu <= 7; pu++) {
 
-    // ★ 累積確率（pu体以上）
+    // ★ 累積確率分布（pu体以上）
     const values = filtered.map(p => {
       let sum = 0;
       for (let i = pu; i <= 7; i++) {
@@ -570,4 +570,77 @@ function drawChart(progress, totalPulls) {
       }
     }
   });
+}
+/* ============================================================
+   ★ 凡例描画（累積版・完全版）
+   ============================================================ */
+
+function renderLegend(progress, totalPulls) {
+  const legendEl = document.getElementById("graph-legend");
+  if (!legendEl) return;
+
+  const colors = [
+    "#999999", // 0体
+    "#4A90E2", // 1体
+    "#50E3C2", // 2体
+    "#F8E71C", // 3体
+    "#F5A623", // 4体
+    "#D0021B", // 5体
+    "#9013FE", // 6体
+    "#000000"  // 完凸
+  ];
+
+  const last = progress[progress.length - 1].distribution;
+
+  // 1001連以上は完凸のみ
+  if (totalPulls >= 1001) {
+    let sum = last[7]; // 完凸以上
+    const percent = (sum * 100).toFixed(2);
+
+    legendEl.innerHTML = `
+      <div class="card">
+        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
+        <p>完凸：${percent}%</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div class="card">
+      <h3>★5ピックアップ入手確率（${totalPulls}連）</h3>
+      <div class="legend-list">
+  `;
+
+  for (let pu = 0; pu <= 7; pu++) {
+
+    // ★ 累積確率（pu体以上）
+    let sum = 0;
+    for (let i = pu; i <= 7; i++) {
+      sum += last[i];
+    }
+    const percent = (sum * 100).toFixed(2);
+
+    const label = pu === 7 ? "完凸" : `${pu}体`;
+    const color = colors[pu];
+
+    const display =
+      percent === "100.00" ? "入手済" :
+      percent === "0.00" ? "0％" :
+      `${percent}%`;
+
+    html += `
+      <div class="legend-item">
+        <span class="legend-color" style="background:${color};"></span>
+        <span class="legend-text">${label}：${display}</span>
+      </div>
+    `;
+  }
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  legendEl.innerHTML = html;
 }
