@@ -19,12 +19,12 @@ const PRICE_CONFIG = {
     stones: 6480    // 往日の夢華（初回特典なし）
   },
   Genshin: {
-    yen: 0,         // 将来設定用
-    stones: 0
+    yen: 12000,     // 創世結晶＝原石と等価
+    stones: 6480
   },
   Zenless: {
-    yen: 0,         // 将来設定用
-    stones: 0
+    yen: 12000,     // モノクローム体系はスタレと同じ
+    stones: 6480
   }
 };
 
@@ -175,7 +175,7 @@ function renderResourceInputs() {
 
       <div class="col">
         <small>
-          ※課金額はゲーム別レート（スタレは12,000円→6480石）を元に計算します。
+          ※課金額はゲーム別レート（12000円→6480石）を元に計算します。
         </small>
       </div>
     </div>
@@ -464,7 +464,7 @@ function renderResults(
 
     if (extraCost !== null) {
       html += `<div>追加課金額：${extraCost.toLocaleString()}円</div>`;
-      html += `<small>※ゲーム別の基準レート（スタレは12,000円→6480石）を元に計算しています。</small>`;
+      html += `<small>※ゲーム別の基準レート（12000円→6480石）を元に計算しています。</small>`;
     } else {
       html += `<div>追加課金額：レート未設定（原神・ゼンゼロの金額を設定してください）</div>`;
     }
@@ -499,7 +499,7 @@ function renderResults(
     html += `<div>${label}： ${display}</div>`;
   });
 
-   html += `</div>`;
+  html += `</div>`;
 
   /* ------------------------------------------------------------
      ★追加：PU入手数の確率分布グラフ
