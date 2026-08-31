@@ -650,7 +650,7 @@ function drawChart(progress, totalPulls) {
         }
       },
       plugins: {
-        legend: { display: true }   // ← ★ 凡例が復活する
+        legend: { display: false }   // ← ★ 凡例が復活する
         // ★ afterDraw は削除（v4では凡例を壊す）
       }
     }
