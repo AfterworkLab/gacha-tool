@@ -521,7 +521,7 @@ function drawChart(progress, totalPulls) {
   else if (totalPulls > 300) step = 5;
   else if (totalPulls > 100) step = 2;
 
-  const filtered = progress.filter(p => p.pulls % step === 0 || p.pulls === 1);
+  const filtered = progress;
 
   const colors = [
     "#999999",
