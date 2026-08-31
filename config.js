@@ -39,7 +39,10 @@ const GAME_CONFIGS = {
     featured: {
       count5: 1,
       count4: 3
-    }
+    },
+
+    /* ★ ガチャ1回に必要な石数（ゲーム別に持たせる） */
+    pullCostStones: 160
   },
 
   "StarRail_weapon": {
@@ -65,7 +68,6 @@ const GAME_CONFIGS = {
     },
 
     guarantee: {
-      // ★5は「75% PU / 25% すり抜け」
       fiveStar: { type: "75_25", pickupRate: 0.75 },
       fourStar: { type: "always", pickupRate: 1.0 }
     },
@@ -73,7 +75,9 @@ const GAME_CONFIGS = {
     featured: {
       count5: 1,
       count4: 3
-    }
+    },
+
+    pullCostStones: 160
   },
 
   /* ------------------------------------------------------------
@@ -110,7 +114,9 @@ const GAME_CONFIGS = {
     featured: {
       count5: 1,
       count4: 3
-    }
+    },
+
+    pullCostStones: 160
   },
 
   "Genshin_weapon": {
@@ -136,7 +142,6 @@ const GAME_CONFIGS = {
     },
 
     guarantee: {
-      // ★5は「75% PU / 25% すり抜け」
       fiveStar: { type: "75_25", pickupRate: 0.75 },
       fourStar: { type: "always", pickupRate: 1.0 }
     },
@@ -144,7 +149,9 @@ const GAME_CONFIGS = {
     featured: {
       count5: 2,
       count4: 5
-    }
+    },
+
+    pullCostStones: 160
   },
 
   /* ------------------------------------------------------------
@@ -181,7 +188,9 @@ const GAME_CONFIGS = {
     featured: {
       count5: 1,
       count4: 3
-    }
+    },
+
+    pullCostStones: 160
   },
 
   "Zenless_weapon": {
@@ -214,7 +223,9 @@ const GAME_CONFIGS = {
     featured: {
       count5: 1,
       count4: 3
-    }
+    },
+
+    pullCostStones: 160
   }
 
 };
