@@ -324,7 +324,7 @@ function updateBackgroundColor() {
 }
 
 /* ------------------------------------------------------------
-   ⑥ シミュレーション実行（★追加：課金額＋追加連数反映）
+   ⑥ シミュレーション実行（simulateDistribution 版）
    ------------------------------------------------------------ */
 function runSimulation() {
   const key = `${currentGame}_${currentBanner}`;
@@ -362,7 +362,6 @@ function runSimulation() {
     stones + paid + eventMain + eventExtra +
     dailyStones + passStones;
 
-  /* ★追加：追加連数を totalPulls に反映 */
   const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
 
   const totalPulls =
@@ -381,7 +380,15 @@ function runSimulation() {
 
   const trials = Number(document.getElementById("input-trials").value);
 
-  const result = simulator.simulateProgress(trials, initialState, totalPulls);
+  /* ★ simulateDistribution を使用 */
+  const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
+
+  /* ★ progress を自前で生成（グラフ用） */
+  const progress = [];
+  for (let pulls = 1; pulls <= totalPulls; pulls++) {
+    const d = simulator.simulateDistribution(trials, initialState, pulls);
+    progress.push({ pulls, distribution: d.distribution });
+  }
 
   /* ------------------------------------------------------------
      ★課金額計算
@@ -396,7 +403,12 @@ function runSimulation() {
   }
 
   renderResults(
-    result,
+    {
+      progress,
+      finalDistribution: dist.distribution,
+      avg5NonPU: dist.avg5NonPU,
+      avg4: dist.avg4
+    },
     totalPulls,
     diffDays,
     dailyStones,
@@ -405,6 +417,7 @@ function runSimulation() {
     extraCost
   );
 }
+
 /* ------------------------------------------------------------
    結果描画（★課金額表示＋凸進捗グラフ）
    ------------------------------------------------------------ */
@@ -439,9 +452,6 @@ function renderResults(
       <div>月パス石：${passStones}個</div>
   `;
 
-  /* ------------------------------------------------------------
-     ★課金額表示
-     ------------------------------------------------------------ */
   if (extraPulls > 0) {
     html += `<hr>`;
     html += `<div>追加連数：${extraPulls}連</div>`;
@@ -456,14 +466,8 @@ function renderResults(
 
   html += `</div>`;
 
-  /* ------------------------------------------------------------
-     ★凸進捗凡例表示領域
-     ------------------------------------------------------------ */
   html += `<div id="graph-legend"></div>`;
 
-  /* ------------------------------------------------------------
-     ★凸進捗グラフ領域
-     ------------------------------------------------------------ */
   html += `
     <div class="card">
       <h2>凸進捗グラフ（ガチャ回数 → 凸段階確率）</h2>
@@ -473,14 +477,12 @@ function renderResults(
 
   el.innerHTML = html;
 
-  /* ------------------------------------------------------------
-     ★グラフ描画（非同期）
-     ------------------------------------------------------------ */
   setTimeout(() => {
     drawChart(result.progress, totalPulls);
     renderLegend(result.progress, totalPulls);
   }, 50);
 }
+
 /* ============================================================
    ★ 凸進捗グラフ描画関数（新仕様）
    ============================================================ */
@@ -489,7 +491,6 @@ let puChartInstance = null;
 
 function drawChart(progress, totalPulls) {
 
-  // 1001連以上はグラフ非表示
   if (totalPulls >= 1001) {
     const canvas = document.getElementById("puChart");
     if (canvas) canvas.style.display = "none";
@@ -503,14 +504,10 @@ function drawChart(progress, totalPulls) {
 
   const ctx = canvas.getContext("2d");
 
-  // 既存チャート破棄（暴走防止）
   if (puChartInstance) {
     puChartInstance.destroy();
   }
 
-  /* ------------------------------------------------------------
-     ★ デフォルメ（間引き）処理
-     ------------------------------------------------------------ */
   let step = 1;
   if (totalPulls > 600) step = 10;
   else if (totalPulls > 300) step = 5;
@@ -518,38 +515,29 @@ function drawChart(progress, totalPulls) {
 
   const filtered = progress.filter(p => p.pulls % step === 0 || p.pulls === 1);
 
-  /* ------------------------------------------------------------
-     ★ datasets（凸段階ごとに線を描画）
-     ------------------------------------------------------------ */
-
   const colors = [
-    "#999999", // 0体（非表示）
-    "#4A90E2", // 1体
-    "#50E3C2", // 2体
-    "#F8E71C", // 3体
-    "#F5A623", // 4体
-    "#D0021B", // 5体
-    "#9013FE", // 6体
-    "#000000"  // 完凸（7体）
+    "#999999",
+    "#4A90E2",
+    "#50E3C2",
+    "#F8E71C",
+    "#F5A623",
+    "#D0021B",
+    "#9013FE",
+    "#000000"
   ];
 
   const labels = filtered.map(p => p.pulls);
-
   let datasets = [];
 
   for (let pu = 0; pu <= 7; pu++) {
-
-    // 0％と100％は非表示
     const values = filtered.map(p => p.distribution[pu] * 100);
     const maxVal = Math.max(...values);
     const minVal = Math.min(...values);
 
-    if (maxVal === 0 || minVal === 100) {
-      continue; // 非表示
-    }
+    if (maxVal === 0 || minVal === 100) continue;
 
     datasets.push({
-      label: `${pu === 7 ? "完凸" : `${pu}体`}`,
+      label: pu === 7 ? "完凸" : `${pu}体`,
       data: values,
       borderColor: colors[pu],
       backgroundColor: "transparent",
@@ -558,15 +546,9 @@ function drawChart(progress, totalPulls) {
     });
   }
 
-  /* ------------------------------------------------------------
-     ★ Chart.js 描画
-     ------------------------------------------------------------ */
   puChartInstance = new Chart(ctx, {
     type: "line",
-    data: {
-      labels,
-      datasets
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -574,28 +556,17 @@ function drawChart(progress, totalPulls) {
         y: {
           min: 0,
           max: 100,
-          ticks: {
-            callback: (value) => `${value}%`
-          }
+          ticks: { callback: v => `${v}%` }
         }
       },
-      plugins: {
-        legend: { display: false } // 凡例は別途テキストで表示
-      }
+      plugins: { legend: { display: false } }
     }
   });
 }
-
-/* ============================================================
-   ★ 凸進捗凡例（テキスト表示）
-   ============================================================ */
-
 function renderLegend(progress, totalPulls) {
-
   const legendEl = document.getElementById("graph-legend");
   if (!legendEl) return;
 
-  // 1001連以上は凡例も非表示 → 完凸確率のみ表示
   if (totalPulls >= 1001) {
     const last = progress[progress.length - 1].distribution[7] * 100;
     legendEl.innerHTML = `
@@ -608,12 +579,10 @@ function renderLegend(progress, totalPulls) {
   }
 
   const last = progress[progress.length - 1].distribution;
-
   let html = `<div class="card"><h3>凸進捗凡例</h3>`;
 
   for (let pu = 0; pu <= 7; pu++) {
     const percent = (last[pu] * 100).toFixed(2);
-
     if (percent === "0.00") {
       html += `<div>${pu === 7 ? "完凸" : `${pu}体`}：0％</div>`;
     } else if (percent === "100.00") {
@@ -624,6 +593,5 @@ function renderLegend(progress, totalPulls) {
   }
 
   html += `</div>`;
-
   legendEl.innerHTML = html;
 }
