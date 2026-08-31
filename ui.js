@@ -499,9 +499,14 @@ function renderResults(
 
 let puChartInstance = null;
 
-// ★ ロゴ画像を事前に読み込む（これが重要）
+// ★ ロゴ画像を事前に読み込む
 const awLogo = new Image();
 awLogo.src = "logo.png";
+
+// ★ ロゴ読み込み後にチャートを再描画する（これが決定的に重要）
+awLogo.onload = () => {
+  if (puChartInstance) puChartInstance.update();
+};
 
 function drawChart(progress, totalPulls) {
 
@@ -578,7 +583,7 @@ function drawChart(progress, totalPulls) {
 
         // ★ ロゴ描画（安定版）
         afterDraw: chart => {
-          if (!awLogo.complete) return; // ← 読み込み前なら描画しない
+          if (!awLogo.complete) return;
 
           const ctx = chart.ctx;
           const size = 40;
