@@ -2,6 +2,7 @@
    ui.js  —  UI制御（入力 → シミュレーション → 結果描画）
    未来石計算：ピックアップ日・デイリー達成率・月パス対応
    課金額計算：ゲーム別レート（スタレ基準＋将来拡張）
+   グラフ描画：非同期化で処理を軽量化
    Afterwork Lab / 2026
    ============================================================ */
 
@@ -9,23 +10,12 @@ let currentGame = "StarRail";
 let currentBanner = "character";
 
 /* ------------------------------------------------------------
-   ★追加：ゲーム別課金レート設定（将来拡張用）
-   - yen: 基準課金額（日本円）
-   - stones: その課金額で手に入る石数
+   ★ゲーム別課金レート設定
    ------------------------------------------------------------ */
 const PRICE_CONFIG = {
-  StarRail: {
-    yen: 12000,     // Google Play 12,000円
-    stones: 6480    // 往日の夢華（初回特典なし）
-  },
-  Genshin: {
-    yen: 12000,     // 創世結晶＝原石と等価
-    stones: 6480
-  },
-  Zenless: {
-    yen: 12000,     // モノクローム体系はスタレと同じ
-    stones: 6480
-  }
+  StarRail: { yen: 12000, stones: 6480 },
+  Genshin: { yen: 12000, stones: 6480 },
+  Zenless: { yen: 12000, stones: 6480 }
 };
 
 /* ------------------------------------------------------------
@@ -58,7 +48,6 @@ function getLabelsForGame(game) {
 
 function updateGameLabels() {
   const labels = getLabelsForGame(currentGame);
-
   const ls = document.getElementById("label-stones");
   const lt = document.getElementById("label-tickets");
   const lp = document.getElementById("label-paid");
@@ -201,11 +190,9 @@ function renderFutureResourceSection() {
 
     <div id="future-body" class="future-body hidden">
 
-      <!-- ① 往日の夢華／創世結晶／モノクローム -->
       <h3 id="label-paid"></h3>
       <input id="input-paid" type="number" value="0">
 
-      <!-- ② イベント石 -->
       <h3>イベント石</h3>
       <div class="row-2col">
         <div class="col">
@@ -223,16 +210,15 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
-      <!-- ③ 現在のガチャ状況 -->
       <h3>現在のガチャ状況</h3>
       <div class="row-2col">
         <div class="col">
-          <label>現在の★5カウント（今何連目か）</label>
+          <label>現在の★5カウント</label>
           <input id="input-pity5" type="number" value="0">
         </div>
 
         <div class="col">
-          <label>次の★5はピックアップ確定？</label>
+          <label>次の★5はPU確定？</label>
           <select id="input-guarantee5">
             <option value="false">未確定</option>
             <option value="true">確定</option>
@@ -240,7 +226,6 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
-      <!-- ④ 未来の石 -->
       <h3>未来の石</h3>
       <div class="row-3col">
         <div class="col">
@@ -267,12 +252,11 @@ function renderFutureResourceSection() {
         </div>
       </div>
 
-      <!-- ⑤ シミュレーション精度 -->
       <h3>シミュレーション精度</h3>
       <select id="input-trials">
-        <option value="10000">1万回（軽い）</option>
-        <option value="50000">5万回（標準）</option>
-        <option value="100000">10万回（高精度）</option>
+        <option value="20000">2万回（推奨）</option>
+        <option value="50000">5万回（高精度）</option>
+        <option value="100000">10万回（超高精度）</option>
       </select>
 
     </div>
@@ -340,7 +324,7 @@ function updateBackgroundColor() {
 }
 
 /* ------------------------------------------------------------
-   ⑥ シミュレーション実行（★追加：課金額計算）
+   ⑥ シミュレーション実行（★追加：課金額＋追加連数反映）
    ------------------------------------------------------------ */
 function runSimulation() {
   const key = `${currentGame}_${currentBanner}`;
@@ -378,7 +362,13 @@ function runSimulation() {
     stones + paid + eventMain + eventExtra +
     dailyStones + passStones;
 
-  const totalPulls = Math.floor(totalStones / config.pullCostStones) + tickets;
+  /* ★追加：追加連数を totalPulls に反映 */
+  const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
+
+  const totalPulls =
+    Math.floor(totalStones / config.pullCostStones) +
+    tickets +
+    extraPulls;
 
   const initialState = {
     pity5,
@@ -394,10 +384,8 @@ function runSimulation() {
   const result = simulator.simulateDistribution(trials, initialState, totalPulls);
 
   /* ------------------------------------------------------------
-     ★追加：課金額計算
+     ★課金額計算
      ------------------------------------------------------------ */
-  const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
-
   let extraCost = null;
   const priceCfg = PRICE_CONFIG[currentGame];
 
@@ -419,7 +407,7 @@ function runSimulation() {
 }
 
 /* ------------------------------------------------------------
-   結果描画（★追加：課金額表示＋グラフ描画）
+   結果描画（★課金額表示＋非同期グラフ描画）
    ------------------------------------------------------------ */
 function renderResults(
   result,
@@ -456,7 +444,7 @@ function renderResults(
   `;
 
   /* ------------------------------------------------------------
-     ★追加：課金額表示
+     ★課金額表示
      ------------------------------------------------------------ */
   if (extraPulls > 0) {
     html += `<hr>`;
@@ -473,7 +461,7 @@ function renderResults(
   html += `</div>`;
 
   /* ------------------------------------------------------------
-     ★既存：PU入手確率
+     ★PU入手確率
      ------------------------------------------------------------ */
   html += `
     <div class="card">
@@ -502,7 +490,7 @@ function renderResults(
   html += `</div>`;
 
   /* ------------------------------------------------------------
-     ★追加：PU入手数の確率分布グラフ
+     ★PU入手数の確率分布グラフ
      ------------------------------------------------------------ */
   html += `
     <div class="card">
@@ -515,59 +503,62 @@ function renderResults(
   el.innerHTML = html;
 
   /* ------------------------------------------------------------
-     ★追加：Chart.js によるグラフ描画
+     ★追加：グラフ描画を非同期化
      ------------------------------------------------------------ */
-  if (window.Chart) {
-    const ctx = document.getElementById("puChart").getContext("2d");
+  setTimeout(() => drawChart(prob), 50);
+}
 
-    // X軸ラベル（PU入手数）
-    const labels = [
-      "0体",
-      "1体",
-      "2体",
-      "3体",
-      "4体",
-      "5体",
-      "6体",
-      "完凸（7体以上）"
-    ];
+/* ------------------------------------------------------------
+   ★追加：グラフ描画関数（非同期化用）
+   ------------------------------------------------------------ */
+function drawChart(prob) {
+  if (!window.Chart) return;
 
-    // Y軸データ（確率％）
-    const data = prob.map(p => (p * 100));
+  const ctx = document.getElementById("puChart").getContext("2d");
 
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "PU入手数ごとの確率（%）",
-            data,
-            borderColor: "#4A90E2",
-            backgroundColor: "rgba(74,144,226,0.2)",
-            tension: 0.2,
-            pointRadius: 3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            min: 0,
-            max: 100,
-            ticks: {
-              callback: (value) => `${value}%`
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: true
+  const labels = [
+    "0体",
+    "1体",
+    "2体",
+    "3体",
+    "4体",
+    "5体",
+    "6体",
+    "完凸（7体以上）"
+  ];
+
+  const data = prob.map(p => p * 100);
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "PU入手数ごとの確率（%）",
+          data,
+          borderColor: "#4A90E2",
+          backgroundColor: "rgba(74,144,226,0.2)",
+          tension: 0.2,
+          pointRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            callback: (value) => `${value}%`
           }
         }
+      },
+      plugins: {
+        legend: { display: true }
       }
-    });
-  }
+    }
+  });
 }
