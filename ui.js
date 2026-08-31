@@ -1,11 +1,6 @@
 /* ============================================================
    © AfterworkLab
    ui.js — ガチャシミュレーター UI（完全版）
-   ・凸進捗グラフ（累積）
-   ・100連以上でも安定描画
-   ・0体の線は非表示
-   ・step間引きで高速化
-   ・凡例は新仕様
    ============================================================ */
 
 let currentGame = "StarRail";
@@ -376,10 +371,8 @@ function runSimulation() {
 
   const trials = Number(document.getElementById("input-trials").value);
 
-  /* ★ simulateDistribution を使用 */
   const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
 
-  /* ★ progress を自前で生成（高速化） */
   let step = 1;
   if (totalPulls > 600) step = 10;
   else if (totalPulls > 300) step = 5;
@@ -391,13 +384,11 @@ function runSimulation() {
     progress.push({ pulls, distribution: d.distribution });
   }
 
-  // ★ 最後が totalPulls で終わらない場合は必ず追加する
   if (progress[progress.length - 1].pulls !== totalPulls) {
     const d = simulator.simulateDistribution(trials, initialState, totalPulls);
     progress.push({ pulls: totalPulls, distribution: d.distribution });
   }
 
-  /* ★課金額計算 */
   let extraCost = null;
   const priceCfg = PRICE_CONFIG[currentGame];
 
@@ -485,16 +476,16 @@ function renderResults(
     drawChart(result.progress, totalPulls);
     renderLegend(result.progress, totalPulls);
   }, 50);
-   html += `
+
+  html += `
   <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
     © AfterworkLab
   </div>
 `;
-
 }
 
 /* ============================================================
-   ★ 凸進捗グラフ描画（©AfterworkLab）
+   ★ 凸進捗グラフ描画（Chart.js v4 対応版）
    ============================================================ */
 
 let puChartInstance = null;
@@ -503,11 +494,54 @@ let puChartInstance = null;
 const awLogo = new Image();
 awLogo.src = "logo.png";
 
-// ★ ロゴ読み込み後にチャートを再描画する（必須）
+// ★ ロゴ読み込み後にチャートを再描画する
 awLogo.onload = () => {
   if (puChartInstance) puChartInstance.update();
 };
 
+/* ★ Chart.js v4 用ロゴ描画プラグイン */
+const logoPlugin = {
+  id: "logoPlugin",
+  afterDraw(chart, args, options) {
+    if (!awLogo.complete) return;
+
+    const ctx = chart.ctx;
+/* ============================================================
+   ★ 凸進捗グラフ描画（Chart.js v4 対応版）
+   ============================================================ */
+
+let puChartInstance = null;
+
+// ★ ロゴ画像を事前に読み込む
+const awLogo = new Image();
+awLogo.src = "logo.png";
+
+// ★ ロゴ読み込み後にチャートを再描画する
+awLogo.onload = () => {
+  if (puChartInstance) puChartInstance.update();
+};
+
+/* ★ Chart.js v4 用ロゴ描画プラグイン */
+const logoPlugin = {
+  id: "logoPlugin",
+  afterDraw(chart, args, options) {
+    if (!awLogo.complete) return;
+
+    const ctx = chart.ctx;
+    const size = 40;
+
+    // ★ ロゴの描画位置（右下）
+    const x = chart.chartArea.right - size - 10;
+    const y = chart.chartArea.bottom - size - 10;
+
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(awLogo, x, y, size, size);
+    ctx.restore();
+  }
+};
+
+/* ★ グラフ描画（v4対応） */
 function drawChart(progress, totalPulls) {
 
   if (totalPulls >= 1001) {
@@ -579,96 +613,11 @@ function drawChart(progress, totalPulls) {
         }
       },
       plugins: {
-        legend: { display: false },
-
-        // ★ ロゴ描画（安定版）
-        afterDraw: chart => {
-          if (!awLogo.complete) return;
-
-          const ctx = chart.ctx;
-          const size = 40;
-          const x = chart.chartArea.left + 20;
-          const y = chart.chartArea.top + 20;
-
-          ctx.save();
-          ctx.globalAlpha = 0.8;
-          ctx.drawImage(awLogo, x, y, size, size);
-          ctx.restore();
-        }
+        legend: { display: false }
       }
-    }
+    },
+
+    // ★ Chart.js v4 ではここでプラグインを登録する
+    plugins: [logoPlugin]
   });
-}
-/* ============================================================
-   ★ 凡例描画（累積版・完全版）
-   ============================================================ */
-
-function renderLegend(progress, totalPulls) {
-  const legendEl = document.getElementById("graph-legend");
-  if (!legendEl) return;
-
-  const colors = [
-    "#999999", // 0体
-    "#4A90E2", // 1体
-    "#50E3C2", // 2体
-    "#F8E71C", // 3体
-    "#F5A623", // 4体
-    "#D0021B", // 5体
-    "#9013FE", // 6体
-    "#000000"  // 完凸
-  ];
-
-  const last = progress[progress.length - 1].distribution;
-
-  // 1001連以上は完凸のみ
-  if (totalPulls >= 1001) {
-    let sum = last[7]; // 完凸以上
-    const percent = (sum * 100).toFixed(2);
-
-    legendEl.innerHTML = `
-      <div class="card">
-        <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
-        <p>完凸：${percent}%</p>
-      </div>
-    `;
-    return;
-  }
-
-  let html = `
-    <div class="card">
-      <h3>★5ピックアップ入手確率分布（${totalPulls}連）</h3>
-      <div class="legend-list">
-  `;
-
-  for (let pu = 0; pu <= 7; pu++) {
-
-    // ★ 累積確率（pu体以上）
-    let sum = 0;
-    for (let i = pu; i <= 7; i++) {
-      sum += last[i];
-    }
-    const percent = (sum * 100).toFixed(2);
-
-    const label = pu === 7 ? "完凸" : `${pu}体`;
-    const color = colors[pu];
-
-    const display =
-      percent === "100.00" ? "入手済" :
-      percent === "0.00" ? "0％" :
-      `${percent}%`;
-
-    html += `
-      <div class="legend-item">
-        <span class="legend-color" style="background:${color};"></span>
-        <span class="legend-text">${label}：${display}</span>
-      </div>
-    `;
-  }
-
-  html += `
-      </div>
-    </div>
-  `;
-
-  legendEl.innerHTML = html;
 }
