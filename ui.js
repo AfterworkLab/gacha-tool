@@ -530,9 +530,9 @@ const logoPlugin = {
     const ctx = chart.ctx;
     const size = 40;
 
-    // ★ ロゴの描画位置（右下）
-    const x = chart.chartArea.right - size - 10;
-    const y = chart.chartArea.bottom - size - 10;
+    const canvas = chart.canvas;
+    const x = canvas.width - size - 10;
+    const y = canvas.height - size - 10;
 
     ctx.save();
     ctx.globalAlpha = 0.8;
