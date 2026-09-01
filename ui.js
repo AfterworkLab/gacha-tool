@@ -476,6 +476,21 @@ function renderResults(
       <canvas id="puChart"></canvas>
     </div>
   `;
+  html += `
+    <div class="card">
+      <h2>★5ピックアップ入手確率分布（${totalPulls}連）</h2>
+      <canvas id="puChart"></canvas>
+    </div>
+  `;
+
+  // ★ 課金レートの説明を追加（Google Play 基準）
+  html += `
+    <div class="card">
+      <p style="font-size:12px; opacity:0.7;">
+        ※追加課金額は Google Play のレート（12,000円 → 課金石6,480＋おまけ1,600）を基準としています。
+      </p>
+    </div>
+  `;
 
 
   html += `
