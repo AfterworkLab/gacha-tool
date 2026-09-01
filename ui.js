@@ -531,10 +531,19 @@ function renderLegend(progress, totalPulls) {
     const label = pu === 7 ? "完凸" : `${pu}体`;
     const color = colors[pu];
 
+    // 数値として扱う（浮動小数点誤差対策）
+    const percentNum = Number(percent);
+
+    // 「入手済み」の判定ロジック
+    // 例：完凸が 99.83% → PU0〜6 は入手済
+    const isObtained = percentNum >= 99.99;
+
+    // 表示内容
     const display =
-      percent === "100.00" ? "入手済" :
-      percent === "0.00" ? "0％" :
-      `${percent}%`;
+    isObtained ? "入手済" :
+    percentNum === 0 ? "0％" :
+    `${percent}%`;
+
 
     html += `
       <div class="legend-item">
