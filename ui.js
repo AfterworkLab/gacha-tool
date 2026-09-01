@@ -461,6 +461,13 @@ function renderResults(
 
     if (extraCost !== null) {
       html += `<div>追加課金額：${extraCost.toLocaleString()}円</div>`;
+
+      // ★ 課金レート説明（追加課金額の直下）
+      html += `
+        <div style="font-size:12px; opacity:0.7; margin-top:6px;">
+          ※追加課金額は Google Play のレート（12,000円 → 課金石6,480＋おまけ1,600）を基準としています。
+        </div>
+      `;
     } else {
       html += `<div>追加課金額：レート未設定</div>`;
     }
@@ -477,20 +484,10 @@ function renderResults(
     </div>
   `;
 
-  // ★ 課金レートの説明を追加（Google Play 基準）
   html += `
-    <div class="card">
-      <p style="font-size:12px; opacity:0.7;">
-        ※追加課金額は Google Play のレート（12,000円 → 課金石6,480＋おまけ1,600）を基準としています。
-      </p>
+    <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
+      © AfterworkLab
     </div>
-  `;
-
-
-  html += `
-  <div style="text-align:center; margin-top:20px; opacity:0.7; font-size:12px;">
-    © AfterworkLab
-  </div>
   `;
    
   el.innerHTML = html;
@@ -499,7 +496,6 @@ function renderResults(
     drawChart(result.progress, totalPulls);
     renderLegend(result.progress, totalPulls);
   }, 50);
-
 }
 function renderLegend(progress, totalPulls) {
   const legendEl = document.getElementById("graph-legend");
@@ -517,6 +513,9 @@ function renderLegend(progress, totalPulls) {
   ];
 
   const last = progress[progress.length - 1].distribution;
+
+  // ★ 最大PU数（完凸）の確率を取得
+  const maxPercent = Number((last[7] * 100).toFixed(2));
 
   if (totalPulls >= 1001) {
     const percent = (last[7] * 100).toFixed(2);
@@ -537,22 +536,17 @@ function renderLegend(progress, totalPulls) {
 
   for (let pu = 0; pu <= 7; pu++) {
     const percent = (last[pu] * 100).toFixed(2);
+    const percentNum = Number(percent);
     const label = pu === 7 ? "完凸" : `${pu}体`;
     const color = colors[pu];
 
-    // 数値として扱う（浮動小数点誤差対策）
-    const percentNum = Number(percent);
+    // ★ 入手済み判定：最大PU数がほぼ確定なら、その下は全部入手済
+    const isObtained = (maxPercent >= 99.99 && pu < 7);
 
-    // 「入手済み」の判定ロジック
-    // 例：完凸が 99.83% → PU0〜6 は入手済
-    const isObtained = percentNum >= 99.99;
-
-    // 表示内容
     const display =
-    isObtained ? "入手済" :
-    percentNum === 0 ? "0％" :
-    `${percent}%`;
-
+      isObtained ? "入手済" :
+      percentNum === 0 ? "0％" :
+      `${percent}%`;
 
     html += `
       <div class="legend-item">
@@ -569,6 +563,7 @@ function renderLegend(progress, totalPulls) {
 
   legendEl.innerHTML = html;
 }
+
 /* ============================================================
    ★ 凸進捗グラフ描画（Chart.js v4 対応版）
    ============================================================ */
