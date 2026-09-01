@@ -476,12 +476,6 @@ function renderResults(
       <canvas id="puChart"></canvas>
     </div>
   `;
-  html += `
-    <div class="card">
-      <h2>★5ピックアップ入手確率分布（${totalPulls}連）</h2>
-      <canvas id="puChart"></canvas>
-    </div>
-  `;
 
   // ★ 課金レートの説明を追加（Google Play 基準）
   html += `
