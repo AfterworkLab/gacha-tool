@@ -514,9 +514,6 @@ function renderLegend(progress, totalPulls) {
 
   const last = progress[progress.length - 1].distribution;
 
-  // ★ 最大PU数（完凸）の確率を取得
-  const maxPercent = Number((last[7] * 100).toFixed(2));
-
   if (totalPulls >= 1001) {
     const percent = (last[7] * 100).toFixed(2);
     legendEl.innerHTML = `
@@ -540,8 +537,14 @@ function renderLegend(progress, totalPulls) {
     const label = pu === 7 ? "完凸" : `${pu}体`;
     const color = colors[pu];
 
-    // ★ 入手済み判定：最大PU数がほぼ確定なら、その下は全部入手済
-    const isObtained = (maxPercent >= 99.99 && pu < 7);
+    // pu より上の凸数に確率が乗っているかどうか
+    let higherMass = 0;
+    for (let i = pu + 1; i <= 7; i++) {
+      higherMass += last[i];
+    }
+
+    // 「その凸数の確率が 0％」かつ「上の凸数に確率がある」なら入手済（完凸は除外）
+    const isObtained = (percentNum === 0 && higherMass > 0 && pu < 7);
 
     const display =
       isObtained ? "入手済" :
