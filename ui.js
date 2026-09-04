@@ -331,13 +331,13 @@ function runSimulation() {
   const engine = new GachaEngine(config);
   const simulator = new MonteCarloSimulator(engine);
 
-  // UIで選んだ試行回数
-  let trials = Number(document.getElementById("sim-accuracy").value);
+  // ★ UIで選んだ試行回数（input-trials を使う）
+  let trials = Number(document.getElementById("input-trials").value);
 
   // ★ UIの希望連数（仮）
   const inputPulls = Number(document.getElementById("input-pulls").value);
 
-  // --- ここから先に totalStones を計算する必要がある ---
+  // --- ここから totalStones を計算する必要がある ---
 
   const pity5 = Number(document.getElementById("input-pity5").value) || 0;
   const guarantee5 = document.getElementById("input-guarantee5").value === "true";
