@@ -334,10 +334,7 @@ function runSimulation() {
   // ★ UIで選んだ試行回数（input-trials を使う）
   let trials = Number(document.getElementById("input-trials").value);
 
-  // ★ UIの希望連数（仮）
-  const inputPulls = Number(document.getElementById("input-pulls").value);
-
-  // --- ここから totalStones を計算する必要がある ---
+  // --- ここから totalStones を計算する ---
 
   const pity5 = Number(document.getElementById("input-pity5").value) || 0;
   const guarantee5 = document.getElementById("input-guarantee5").value === "true";
@@ -370,13 +367,13 @@ function runSimulation() {
 
   const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
 
-  // ★ ここで totalPulls を計算する（正しい位置）
+  // ★ totalPulls を計算（これが唯一の連数）
   const totalPulls =
     Math.floor(totalStones / config.pullCostStones) +
     tickets +
     extraPulls;
 
-  // ★ totalPulls に基づいて試行回数を最適化する
+  // ★ totalPulls に基づいて試行回数を最適化
   if (totalPulls <= 100) {
     trials = Math.min(trials, 5000);
   } else if (totalPulls <= 200) {
