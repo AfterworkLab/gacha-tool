@@ -334,21 +334,10 @@ function runSimulation() {
   // UIで選んだ試行回数
   let trials = Number(document.getElementById("sim-accuracy").value);
 
-  // ★ totalPulls は後で計算されるので、ここでは別名にする
+  // ★ UIの希望連数（仮）
   const inputPulls = Number(document.getElementById("input-pulls").value);
 
-  // 連数による自動最適化（UIの値を上書き）
-  if (inputPulls <= 100) {
-    trials = Math.min(trials, 5000);
-  } else if (inputPulls <= 200) {
-    trials = Math.min(trials, 10000);
-  } else if (inputPulls <= 300) {
-    trials = Math.min(trials, 15000);
-  } else if (inputPulls <= 500) {
-    trials = Math.min(trials, 20000);
-  } else {
-    trials = Math.min(trials, 30000);
-  }
+  // --- ここから先に totalStones を計算する必要がある ---
 
   const pity5 = Number(document.getElementById("input-pity5").value) || 0;
   const guarantee5 = document.getElementById("input-guarantee5").value === "true";
@@ -381,10 +370,24 @@ function runSimulation() {
 
   const extraPulls = Number(document.getElementById("input-extra-pulls").value) || 0;
 
+  // ★ ここで totalPulls を計算する（正しい位置）
   const totalPulls =
     Math.floor(totalStones / config.pullCostStones) +
     tickets +
     extraPulls;
+
+  // ★ totalPulls に基づいて試行回数を最適化する
+  if (totalPulls <= 100) {
+    trials = Math.min(trials, 5000);
+  } else if (totalPulls <= 200) {
+    trials = Math.min(trials, 10000);
+  } else if (totalPulls <= 300) {
+    trials = Math.min(trials, 15000);
+  } else if (totalPulls <= 500) {
+    trials = Math.min(trials, 20000);
+  } else {
+    trials = Math.min(trials, 30000);
+  }
 
   const initialState = {
     pity5,
