@@ -395,21 +395,31 @@ function runSimulation() {
     obtained4: 0
   };
 
-  const trials = Number(document.getElementById("input-trials").value);
+  // const trials = Number(document.getElementById("input-trials").value);
 
   const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
-
-  let step = 1;
-  if (totalPulls > 600) step = 10;
-  else if (totalPulls > 300) step = 5;
-  else if (totalPulls > 100) step = 2;
+  // ★ 進捗ステップ数の自動最適化
+  let steps;
+  if (totalPulls <= 100) {
+    steps = 10;
+  } else if (totalPulls <= 200) {
+    steps = 12;
+  } else if (totalPulls <= 300) {
+    steps = 15;
+  } else if (totalPulls <= 500) {
+    steps = 18;
+  } else {
+    steps = 20;
+  }
 
   const progress = [];
-  for (let pulls = 1; pulls <= totalPulls; pulls += step) {
+  for (let i = 1; i <= steps; i++) {
+    const pulls = Math.floor(totalPulls * (i / steps));
     const d = simulator.simulateDistribution(trials, initialState, pulls);
     progress.push({ pulls, distribution: d.distribution });
   }
 
+  // 念のため totalPulls が最後に入っているか確認
   if (progress[progress.length - 1].pulls !== totalPulls) {
     const d = simulator.simulateDistribution(trials, initialState, totalPulls);
     progress.push({ pulls: totalPulls, distribution: d.distribution });
