@@ -334,17 +334,17 @@ function runSimulation() {
   // UIで選んだ試行回数
   let trials = Number(document.getElementById("sim-accuracy").value);
 
-  // totalPulls はこの後に計算されるので、先に仮取得する
-  const totalPulls = Number(document.getElementById("input-pulls").value);
+  // ★ totalPulls は後で計算されるので、ここでは別名にする
+  const inputPulls = Number(document.getElementById("input-pulls").value);
 
   // 連数による自動最適化（UIの値を上書き）
-  if (totalPulls <= 100) {
+  if (inputPulls <= 100) {
     trials = Math.min(trials, 5000);
-  } else if (totalPulls <= 200) {
+  } else if (inputPulls <= 200) {
     trials = Math.min(trials, 10000);
-  } else if (totalPulls <= 300) {
+  } else if (inputPulls <= 300) {
     trials = Math.min(trials, 15000);
-  } else if (totalPulls <= 500) {
+  } else if (inputPulls <= 500) {
     trials = Math.min(trials, 20000);
   } else {
     trials = Math.min(trials, 30000);
