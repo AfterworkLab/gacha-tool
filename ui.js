@@ -395,9 +395,8 @@ function runSimulation() {
     obtained4: 0
   };
 
-  // const trials = Number(document.getElementById("input-trials").value);
-
   const dist = simulator.simulateDistribution(trials, initialState, totalPulls);
+
   // ★ 進捗ステップ数の自動最適化
   let steps;
   if (totalPulls <= 100) {
@@ -419,7 +418,6 @@ function runSimulation() {
     progress.push({ pulls, distribution: d.distribution });
   }
 
-  // 念のため totalPulls が最後に入っているか確認
   if (progress[progress.length - 1].pulls !== totalPulls) {
     const d = simulator.simulateDistribution(trials, initialState, totalPulls);
     progress.push({ pulls: totalPulls, distribution: d.distribution });
